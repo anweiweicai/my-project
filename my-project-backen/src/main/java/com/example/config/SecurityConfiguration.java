@@ -1,10 +1,12 @@
 package com.example.config;
 
 import com.example.entity.RestBean;
+import com.example.entity.vo.response.AuthorizeVO;
+import com.example.utils.JwtUtils;
+import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,15 +14,17 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 import java.io.IOException;
 
 @Configuration
 public class SecurityConfiguration {
+
+    @Resource
+    JwtUtils utils;
+
     @Bean//过滤器链
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
@@ -49,13 +53,22 @@ public class SecurityConfiguration {
                 )
                 .build();//构建
     }
+
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         response.setContentType("application/json");//告诉前端 后端返回的是json格式
         response.setCharacterEncoding("UTF-8");//字符编码格式为UTF-8
-        response.getWriter().write(RestBean.success().asJsonString());//将返回值变为json格式
+        UserDetails user = (UserDetails) authentication.getPrincipal();//获取用户详细信息
+        String token = utils.creatJwt(user,1,"xiaocai");
+        AuthorizeVO vo = new AuthorizeVO();
+        vo.setExpire(utils.expireTime());//发送过期时间
+        vo.setRole("juese");//发送角色名
+        vo.setToken(token);//发送token
+        vo.setUsername("xiaocai");//发送用户名
+        response.getWriter().write(RestBean.success(vo).asJsonString());//将返回值变为json格式
     }
+
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
@@ -63,6 +76,7 @@ public class SecurityConfiguration {
         response.setCharacterEncoding("UTF-8");//字符编码格式为UTF-8
         response.getWriter().write(RestBean.failure(401,exception.getMessage()).asJsonString());//获取错误信息
     }
+
     public void onLogoutSuccess(HttpServletRequest request,
                                 HttpServletResponse response,
                                 Authentication authentication) throws IOException, ServletException {
