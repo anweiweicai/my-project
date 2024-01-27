@@ -1,8 +1,10 @@
 package com.example.config;
 
 import com.example.entity.RestBean;
+import com.example.entity.dto.Account;
 import com.example.entity.vo.response.AuthorizeVO;
 import com.example.filter.JwtAuthorizeFileter;
+import com.example.service.AccountService;
 import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -31,6 +34,9 @@ public class SecurityConfiguration {
     @Resource
     JwtAuthorizeFileter jwtAuthorizeFileter;
 
+    @Resource
+    AccountService service;
+
     @Bean//过滤器链
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
@@ -43,8 +49,8 @@ public class SecurityConfiguration {
                 //登录验证配置
                 .formLogin(conf -> conf
                         .loginProcessingUrl("/api/auth/login")
-                        .failureHandler(this::onAuthenticationFailure)//登录失败
-                        .successHandler(this::onAuthenticationSuccess)//登录成功
+                        .failureHandler(this::onAuthenticationFailure)//登录失败, 自带验证逻辑
+                        .successHandler(this::onAuthenticationSuccess)//登录成功, 自带验证逻辑
                 )
                 //登出配置
                 .logout(conf -> conf
@@ -71,13 +77,14 @@ public class SecurityConfiguration {
                                         Authentication authentication) throws IOException {
         response.setContentType("application/json");//告诉前端 后端返回的是json格式
         response.setCharacterEncoding("UTF-8");//字符编码格式为UTF-8
-        UserDetails user = (UserDetails) authentication.getPrincipal();//获取用户详细信息
-        String token = utils.creatJwt(user,1,"xiaocai");
+        User user = (User) authentication.getPrincipal();//获取用户详细信息, 通过验证后会将用户的完整信息给Authentication
+        Account account = service.findAccountByNameOrEmail(user.getUsername());
+        String token = utils.creatJwt(user,account.getId(),account.getUsername());
         AuthorizeVO vo = new AuthorizeVO();
         vo.setExpire(utils.expireTime());//发送过期时间
-        vo.setRole("juese");//发送角色名
+        vo.setRole(account.getRole());//发送角色名
         vo.setToken(token);//发送token
-        vo.setUsername("xiaocai");//发送用户名
+        vo.setUsername(account.getUsername());//发送用户名
         response.getWriter().write(RestBean.success(vo).asJsonString());//将返回值变为json格式
     }
 

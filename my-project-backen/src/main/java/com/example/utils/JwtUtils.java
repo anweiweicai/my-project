@@ -6,6 +6,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.example.entity.dto.Account;
+import com.example.service.AccountService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,6 +33,9 @@ public class JwtUtils {
 
     @Resource
     StringRedisTemplate template;
+
+    @Resource
+    AccountService service;
 
     public boolean invalidateJwt(String headerToken){//让令牌失效, 并返回是否成功
         String token = this.convertToken(headerToken);
@@ -97,9 +102,10 @@ public class JwtUtils {
 
     public UserDetails toUser(DecodedJWT jwt){
         Map<String, Claim> claims = jwt.getClaims();
+        Account account = service.findAccountByNameOrEmail(claims.get("name").asString());
         return User
                 .withUsername(claims.get("name").asString())//获取属性名字应该与jwt创建时的属性名相同 即JWT.create()里定义的属性
-                .password("123456")
+                .password(account.getPassword())
                 .authorities(claims.get("authorities").asArray(String.class))
         //        1.`claims.get("authorities")` 表示从声明中获取名为 "authorities" 的值。
         //        2. `asArray(String.class)` 表示将这个值转换为一个字符串数组。这个数组中包含了用户的权限信息。
