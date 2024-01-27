@@ -5,7 +5,6 @@ import com.example.entity.vo.response.AuthorizeVO;
 import com.example.filter.JwtAuthorizeFileter;
 import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -18,10 +17,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 @Configuration
 public class SecurityConfiguration {
@@ -58,7 +57,7 @@ public class SecurityConfiguration {
                 )
                 //csrf是防止跨站请求伪造(会为本网站用户请求提供令牌, 以保证不是其它网站的请求), 这里配置是禁用CSRF保护功能
                 .csrf(AbstractHttpConfigurer::disable)
-                //sessionManagement会话管理 用于控制和配置用户的会话行为, 在前后端分离程序中, 用JWT处理session, 后端不需要处理session, 将其设置为无状态
+                //sessionManagement会话管理 用于控制和配置用户的会话行为, 这里是用JWT处理session, 这里不需要处理session, 将其设置为无状态
                 .sessionManagement(conf -> conf
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -84,8 +83,16 @@ public class SecurityConfiguration {
 
     public void onLogoutSuccess(HttpServletRequest request,
                                 HttpServletResponse response,
-                                Authentication authentication) throws IOException, ServletException {
-
+                                Authentication authentication) throws IOException {
+        response.setContentType("application/json");//告诉前端 后端返回的是json格式
+        response.setCharacterEncoding("UTF-8");//字符编码格式为UTF-8
+        PrintWriter writer = response.getWriter();
+        String authorization = request.getHeader("Authorization");
+        if (utils.invalidateJwt(authorization)) {
+            writer.write(RestBean.success().asJsonString());
+        }else {
+            writer.write(RestBean.failure(400,"退出登录失败").asJsonString());
+        }
     }
 
     public void onAuthenticationFailure(HttpServletRequest request,
@@ -93,7 +100,7 @@ public class SecurityConfiguration {
                                         AuthenticationException exception) throws IOException {
         response.setContentType("application/json");//告诉前端 后端返回的是json格式
         response.setCharacterEncoding("UTF-8");//字符编码格式为UTF-8
-        response.getWriter().write(RestBean.unauthorized(exception.getMessage()).asJsonString());//获取错误信息
+        response.getWriter().write(RestBean.unauthorized(exception.getMessage()).asJsonString());//获取错误信息 并返回给前端
     }
 
     public void onAccessDeny(HttpServletRequest request,
