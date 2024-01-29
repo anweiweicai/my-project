@@ -9,6 +9,7 @@ import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,7 +19,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -81,10 +81,17 @@ public class SecurityConfiguration {
         Account account = service.findAccountByNameOrEmail(user.getUsername());
         String token = utils.creatJwt(user,account.getId(),account.getUsername());
         AuthorizeVO vo = new AuthorizeVO();
+        BeanUtils.copyProperties(account, vo);//将account的属性复制到vo对应的属性中, 如account的role的值赋值给了vo的role
         vo.setExpire(utils.expireTime());//发送过期时间
-        vo.setRole(account.getRole());//发送角色名
+//        vo.setRole(account.getRole());//发送角色名
         vo.setToken(token);//发送token
-        vo.setUsername(account.getUsername());//发送用户名
+//        vo.setUsername(account.getUsername());//发送用户名
+
+//        另一种实现方式, 将account的属性复制到vo对应的属性中:
+//        AuthorizeVO vo = account.asViewObject(AuthorizeVO.class, v -> {
+//            v.setExpire(utils.expireTime());//发送过期时间
+//            v.setToken(token);//发送token
+//        });
         response.getWriter().write(RestBean.success(vo).asJsonString());//将返回值变为json格式
     }
 
