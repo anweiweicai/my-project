@@ -7,7 +7,7 @@
     <div style="flex: 1; background-color: black">
 <!-- `flex: 1`用于在flex容器中平均分配剩余空间给flex项-->
       <el-image style="width: 100%; height: 100%" fit="cover"
-          src="public/welcome.png"></el-image>
+          src="/welcome.png"></el-image>
     </div>
     <div class="welcome-title">
       <div style="font-size: 30px; font-weight: bold;">欢迎来到本网站</div>

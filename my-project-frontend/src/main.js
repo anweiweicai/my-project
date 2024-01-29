@@ -1,6 +1,9 @@
 import {createApp} from 'vue'
 import App from './App.vue'
 import router from "@/router/index.js";
+import axios from "axios";
+
+axios.defaults.baseURL = 'http://localhost:8080'
 
 const app = createApp(App)//创建了一个Vue应用实例`app`,在这个实例上面对应用进行配置和添加插件
 
