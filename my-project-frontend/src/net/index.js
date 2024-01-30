@@ -6,7 +6,7 @@ const authItemName = "access_token"
 
 const defaultFailure = (message, code, url)=>{
     console.warn(`请求地址:${url}, 状态码:${code}, 错误信息:${message}`)
-    ElMessage.warning(message)
+    ElMessage.warning('错误代码: '+code+'  错误信息: '+ message)
 }
 
 const defaultError= (err)=> {
@@ -40,6 +40,11 @@ function deleteAccessToken(){
     sessionStorage.removeItem(authItemName)
 }
 
+function accessHeader(){//获取请求头
+    const token = takeAccessToken()
+    return token ? {'Authorization': `Bearer ${token}`} : {}
+}
+
 function internalPost(url, data, header, success, failure, error = defaultError){
     axios.post(url, data, {headers: header}).then(({data})=>{
         if (data.code === 200){
@@ -50,7 +55,7 @@ function internalPost(url, data, header, success, failure, error = defaultError)
     }).catch(err => error(err))
 }
 
-function internalGet(url, header, success, failure, error = defaultError){
+function internalGet(url, header, success, failure, error = defaultError){//内部使用的get
     axios.get(url, {headers: header}).then(({data})=>{
         if (data.code === 200){
             success(data.data)
@@ -58,6 +63,14 @@ function internalGet(url, header, success, failure, error = defaultError){
             failure(data.message, data.code, url)
         }
     }).catch(err => error(err))
+}
+
+function post(url, data, success, failure) {
+    internalPost(url, data, success, accessHeader(), failure = defaultFailure)
+}
+
+function get(url, success, failure){//外部使用的get
+    internalGet(url, accessHeader(), success, failure = defaultFailure)
 }
 
 function login(username, password, remember, success, failure = defaultFailure){
@@ -74,5 +87,17 @@ function login(username, password, remember, success, failure = defaultFailure){
     }, failure)
 }
 
+function logout(success, failure = defaultFailure){
+    get('/api/auth/logout', () => {
+        deleteAccessToken()
+        ElMessage.success('退出登录成功, 欢迎再次使用本网站')
+        success()
+    }, failure)
+}
 
-export {login}
+function unauthorized(){//是否登录, 即是否通过身份验证, 未登录则返回true
+    return !takeAccessToken()
+}
+
+
+export {login, logout, get, post, unauthorized}
