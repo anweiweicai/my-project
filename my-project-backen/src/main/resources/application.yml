@@ -1,8 +1,11 @@
 spring:
   security:
+    filter:
+      order: -100
+#      security的filter优先级为-100
     jwt:
       key: abcdefghijk
-      expire: 7
+      expire: 1
   datasource:
     url: jdbc:mysql://localhost:3306/test
     username: root

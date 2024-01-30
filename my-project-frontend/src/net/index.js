@@ -17,7 +17,7 @@ const defaultError= (err)=> {
 function takeAccessToken(){//取token
     const str = localStorage.getItem(authItemName) || sessionStorage.getItem(authItemName)
     if (!str) return null
-    const authObj = JSON.parse(str)
+    const authObj = JSON.parse(str)//将json格式转化为JavaScript对象
     if (authObj.expire <= new Date()){
         deleteAccessToken()
         ElMessage.warning("登录状态已过期, 请重新登录")
@@ -68,7 +68,7 @@ function login(username, password, remember, success, failure = defaultFailure){
        //  axios发出的数据是json格式, 而Spring Security只接收表单形式的数据, 所以需要转换
        'Content-Type' : 'application/x-www-form-urlencoded'
     }, (data) => {
-        storeAccessToken(data.token, data.remember, data.expire)
+        storeAccessToken(data.token, remember, data.expire)
         ElMessage.success(`登录成功, 欢迎${data.username}来到本网站!`)
         success(data)
     }, failure)
