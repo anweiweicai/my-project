@@ -4,16 +4,38 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
+import com.example.utils.Const;
+import com.example.utils.FlowUtils;
+import jakarta.annotation.Resource;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.TimeoutUtils;
+import org.springframework.messaging.rsocket.service.RSocketExchange;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> implements AccountService {
 //    当您使用`UserDetailsService`加载用户信息时，Spring Security 框架会自动应用密码解密和比较逻辑。
 //    因此，在`loadUserByUsername` 方法中返回的`UserDetails` 对象中包含的密码会自动进行解码和比较。
 //    Spring Security会自动根据其内部配置应用相应的密码解码器（如`BCryptPasswordEncoder`）来比较存储在数据库中的密码和用户提供的密码。
+    @Resource
+    FlowUtils utils;
+
+    @Resource
+    AmqpTemplate amqpTemplate;// RabbitMQ
+
+    @Resource
+    StringRedisTemplate stringRedisTemplate;
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Account account = this.findAccountByNameOrEmail(username);
@@ -31,5 +53,29 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
                 .eq("username",text).or()
                 .eq("email",text)
                 .one();
+    }
+
+    @Override
+    public String registerEmailVerifyCode(String email, String type, String ip) {
+        synchronized (ip.intern()){
+            //这是一个同步块, 在多线程环境中保证对某个代码块的互斥访问，以避免多个线程同时访问可能导致的数据安全问题
+            //intern()方法会尝试将字符串对象放入字符串常量池中，并返回常量池中字符串对象的引用,对于相同值的字符串，不同的字符串对象可以共享同一个引用
+            //在这个方法中, 就是同一ip地址返回的引用是相同的, 可以实现同一ip地址请求的互斥访问
+            if (!this.verifyLimit(ip)){
+                return "请求频繁, 请稍后再试";
+            }
+            Random random = new Random();//生成随机数
+            int code = random.nextInt(899999) + 100000;//生成一个介于 100000 到 999999 之间的随机整数, 即6位数
+            Map<String, Object> data = Map.of("type", type, "email", email, "code", code);//存储验证信息
+            amqpTemplate.convertAndSend("mail", data);//是将消息`data` 发送到名为 "mail" 的消息队列中, Spring 会自动将这个对象转换成消息格式，并发送到指定的队列中
+            stringRedisTemplate.opsForValue()//缓存验证码的信息
+                    .set(Const.VERIFY_EMAIL_DATA + email, String.valueOf(code), 3, TimeUnit.MINUTES);//3分钟有效
+            return null;
+        }
+    }
+
+    private boolean verifyLimit(String ip){
+        String key = Const.VERIFY_EMAIL_LIMIT + ip;
+        return utils.limitOnceCheck(key, 60);
     }
 }
