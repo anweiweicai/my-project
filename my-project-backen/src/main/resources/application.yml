@@ -2,7 +2,7 @@ spring:
   mail:
     host: smtp.163.com
     username: 18090958048@163.com
-    password: QDOWUADFUTYQMOQR
+    password: VZXGIDBPFAYQOPBB
     default-encoding: UTF-8
   rabbitmq:
 #    port: 5672

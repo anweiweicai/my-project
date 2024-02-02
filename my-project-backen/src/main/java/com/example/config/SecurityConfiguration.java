@@ -43,7 +43,7 @@ public class SecurityConfiguration {
                 //访问限制配置
                 //传入conf,类型为AuthorizationManagerRequestMatcherRegistry, 执行conf的相关方法
                 .authorizeHttpRequests(conf -> conf
-                        .requestMatchers("/api/auth/**").permitAll()//表示配置对特定请求的放行. 允许api里面的页面请求(在用户未验证之前可以访问的界面)
+                        .requestMatchers("/api/auth/**", "/error").permitAll()//表示配置对特定请求的放行. 允许api里面的页面请求(在用户未验证之前可以访问的界面)
                         .anyRequest().authenticated()//表示对除这些特定请求之外的所有请求进行身份验证
                 )
                 //登录验证配置

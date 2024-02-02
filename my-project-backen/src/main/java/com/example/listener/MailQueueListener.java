@@ -25,7 +25,7 @@ public class MailQueueListener {
     @Value("${spring.mail.username}")
     String username;
     @RabbitHandler
-    public void sendMailMessage(Map<String, Object> data) throws MessagingException {
+    public void sendMailMessage(Map<String, Object> data) {
         String type = (String)data.get("type");
         String email = (String) data.get("email");
         Integer code = (Integer) data.get("code");
@@ -53,8 +53,8 @@ public class MailQueueListener {
 //                        "您好, 您正在进行重置密码操作, 验证码为: " + code + ", 有效时间为3分钟, 如非本人操作, 请无视", email);
 //            default -> null; // 默认处理
 //        };
-//        if (message == null) return;
-//        sender.send(message);
+        if (message == null) return;
+        sender.send(message);
     }
 
     private SimpleMailMessage createMessage(String title, String content, String email){
