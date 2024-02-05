@@ -66,7 +66,7 @@ function internalGet(url, header, success, failure, error = defaultError){//内�
 }
 
 function post(url, data, success, failure) {
-    internalPost(url, data, success, accessHeader(), failure = defaultFailure)
+    internalPost(url, data, accessHeader(), success, failure = defaultFailure)
 }
 
 function get(url, success, failure){//外部使用的get
