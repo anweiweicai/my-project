@@ -3,7 +3,9 @@ package com.example.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
+import com.example.entity.vo.request.ConfirmResetVO;
 import com.example.entity.vo.request.EmailRegisterVO;
+import com.example.entity.vo.request.EmailResetVO;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -39,6 +41,10 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     @Resource
     PasswordEncoder encoder;
 
+    private String codeRedisKey(String email){//获取redis中存的对应Email的验证码
+        return Const.VERIFY_EMAIL_DATA + email;
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Account account = this.findAccountByNameOrEmail(username);
@@ -72,7 +78,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
             Map<String, Object> data = Map.of("type", type, "email", email, "code", code);//存储验证信息
             amqpTemplate.convertAndSend("mail", data);//是将消息`data` 发送到名为 "mail" 的消息队列中, Spring 会自动将这个对象转换成消息格式，并发送到指定的队列中
             stringRedisTemplate.opsForValue()//缓存验证码的信息
-                    .set(Const.VERIFY_EMAIL_DATA + email, String.valueOf(code), 3, TimeUnit.MINUTES);//3分钟有效
+                    .set(codeRedisKey(email), String.valueOf(code), 3, TimeUnit.MINUTES);//3分钟有效
             return null;
         }
     }
@@ -86,8 +92,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     public String registerEmailAccount(EmailRegisterVO vo) {
         String email = vo.getEmail();
         String username = vo.getUsername();
-        String key = Const.VERIFY_EMAIL_DATA + email;
-        String code = stringRedisTemplate.opsForValue().get(key);
+        String code = stringRedisTemplate.opsForValue().get(codeRedisKey(email));
         if (code == null) return "请先获取验证码";
         if (!code.equals(vo.getCode())) return "验证码输入错误, 请重新输入";
         if (this.existsAccountByEmail(email)) return "此电子邮件已被其他用户注册";
@@ -95,7 +100,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         String password = encoder.encode(vo.getPassword());
         Account account = new Account(null, username, password, email, "user", new Date());
         if (this.save(account)){
-            stringRedisTemplate.delete(key);
+            stringRedisTemplate.delete(codeRedisKey(email));
             return null;
         }else {
             return "内部错误, 请联系管理员";
@@ -107,5 +112,28 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     }
     private boolean existsAccountByUsername(String username){
         return this.baseMapper.exists(Wrappers.<Account>query().eq("email",username));
+    }
+
+
+    @Override
+    public String resetConfirm(ConfirmResetVO vo) {
+        String email = vo.getEmail();
+        String code = stringRedisTemplate.opsForValue().get(codeRedisKey(email));
+        if (code == null) return "请先获取验证码";
+        if (!code.equals(vo.getCode())) return "验证码输入错误, 请重新输入";
+        return null;
+    }
+
+    @Override
+    public String resetEmailAccountPassword(EmailResetVO vo) {
+        String email = vo.getEmail();
+        String verify = this.resetConfirm(new ConfirmResetVO(vo.getEmail(), vo.getCode()));
+        if (verify != null) return verify;
+        String password = encoder.encode(vo.getPassword());
+        boolean update = this.update().eq("email", email).set("password", password).update();
+        if (update){
+            stringRedisTemplate.delete(codeRedisKey(email));
+        }
+        return null;
     }
 }
