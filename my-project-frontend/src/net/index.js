@@ -6,7 +6,7 @@ const authItemName = "access_token"
 
 const defaultFailure = (message, code, url)=>{
     console.warn(`请求地址:${url}, 状态码:${code}, 错误信息:${message}`)
-    ElMessage.warning('错误代码: '+code+'  错误信息: '+ message)
+    ElMessage.warning('错误信息: ' + message)
 }
 
 const defaultError= (err)=> {
@@ -45,7 +45,7 @@ function accessHeader(){//获取请求头
     return token ? {'Authorization': `Bearer ${token}`} : {}
 }
 
-function internalPost(url, data, header, success, failure, error = defaultError){
+function internalPost(url, data, header, success, failure = defaultFailure, error = defaultError){
     axios.post(url, data, {headers: header}).then(({data})=>{
         if (data.code === 200){
             success(data.data)
@@ -55,7 +55,7 @@ function internalPost(url, data, header, success, failure, error = defaultError)
     }).catch(err => error(err))
 }
 
-function internalGet(url, header, success, failure, error = defaultError){//内部使用的get
+function internalGet(url, header, success, failure = defaultFailure, error = defaultError){//内部使用的get
     axios.get(url, {headers: header}).then(({data})=>{
         if (data.code === 200){
             success(data.data)
@@ -66,11 +66,11 @@ function internalGet(url, header, success, failure, error = defaultError){//内�
 }
 
 function post(url, data, success, failure) {
-    internalPost(url, data, accessHeader(), success, failure = defaultFailure)
+    internalPost(url, data, accessHeader(), success, failure)
 }
 
 function get(url, success, failure){//外部使用的get
-    internalGet(url, accessHeader(), success, failure = defaultFailure)
+    internalGet(url, accessHeader(), success, failure)
 }
 
 function login(username, password, remember, success, failure = defaultFailure){

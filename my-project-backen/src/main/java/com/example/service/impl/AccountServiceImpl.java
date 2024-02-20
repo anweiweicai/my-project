@@ -111,17 +111,21 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         return this.baseMapper.exists(Wrappers.<Account>query().eq("email",email));
     }
     private boolean existsAccountByUsername(String username){
-        return this.baseMapper.exists(Wrappers.<Account>query().eq("email",username));
+        return this.baseMapper.exists(Wrappers.<Account>query().eq("username",username));
     }
 
 
     @Override
     public String resetConfirm(ConfirmResetVO vo) {
         String email = vo.getEmail();
-        String code = stringRedisTemplate.opsForValue().get(codeRedisKey(email));
-        if (code == null) return "请先获取验证码";
-        if (!code.equals(vo.getCode())) return "验证码输入错误, 请重新输入";
-        return null;
+        if (!this.existsAccountByEmail(email)){
+            return "用户不存在, 请重新输入";
+        }else {
+            String code = stringRedisTemplate.opsForValue().get(codeRedisKey(email));
+            if (code == null) return "请先获取验证码";
+            if (!code.equals(vo.getCode())) return "验证码输入错误, 请重新输入";
+            return null;
+        }
     }
 
     @Override

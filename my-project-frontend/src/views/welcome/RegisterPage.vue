@@ -88,7 +88,7 @@ function register(){
         router.push('/')
       })
     }else {
-      ElMessage.warning('请完整填写注册表单内容')
+      ElMessage.warning('请将表单内容填写完整')
     }
   })
 }
