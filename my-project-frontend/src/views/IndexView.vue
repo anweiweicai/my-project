@@ -1,22 +1,32 @@
 <script setup>
-  import {logout} from "@/net/index.js";
-  import router from "@/router/index.js";
+import {ref} from "vue";
+import {get, logout} from "@/net/index.js";
+import router from "@/router/index.js";
+import {useStore} from "@/store/index.js";
 
-  // function userLogout(){
-  //   logout(() => {router.push('/')},)
-  // }
+const store = useStore()
+const loading = ref(true)
+
+get('/api/user/info', (data) => {
+  store.user = data
+  loading.value = false
+})
+
+function userLogout(){
+  logout(() => {router.push('/')},)
+}
 </script>
 
 <template>
 
-  <div class="main-content">
-    <el-container style="height: 100%">
+  <div class="main-content" v-loading="loading" element-loading-text="正在进入, 请稍后...">
+    <el-container style="height: 100%" v-if="!loading">
       <el-header class="main-content-header">
         <el-image class="logo" src="https://element-plus.org/images/element-plus-logo.svg"></el-image>
         <div style="flex: 1" class="user-info">
           <div class="profile">
-            <div>用户名</div>
-            <div>电子邮件</div>
+            <div>{{store.user.username}}</div>
+            <div>{{ store.user.email }}</div>
           </div>
           <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"/>
         </div>
@@ -26,6 +36,7 @@
         <el-main>Main</el-main>
       </el-container>
     </el-container>
+    <el-button @click="userLogout">退出登录</el-button>
   </div>
 </template>
 

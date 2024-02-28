@@ -1,6 +1,7 @@
 package com.example.filter;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.example.utils.Const;
 import com.example.utils.JwtUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
@@ -8,7 +9,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -40,7 +40,7 @@ public class JwtAuthorizeFileter extends OncePerRequestFilter {//每次请求都
             // 在后续的请求处理中，可以通过安全上下文获取到用户的身份验证信息，从而进行相应的授权和访问控制处理。
             SecurityContextHolder.getContext().setAuthentication(authentication);
             // 获取当前用户名
-            request.setAttribute("id",utils.toId(jwt));
+            request.setAttribute(Const.ATTR_USER_ID,utils.toId(jwt));
         }
 
         filterChain.doFilter(request, response);

@@ -65,6 +65,11 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     }
 
     @Override
+    public Account findAccountById(int id) {
+        return this.query().eq("id", id).one();
+    }
+
+    @Override
     public String registerEmailVerifyCode(String email, String type, String ip) {
         synchronized (ip.intern()){
             //这是一个同步块, 在多线程环境中保证对某个代码块的互斥访问，以避免多个线程同时访问可能导致的数据安全问题
