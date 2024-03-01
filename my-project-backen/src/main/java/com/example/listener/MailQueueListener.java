@@ -24,6 +24,10 @@ public class MailQueueListener {
 
     @Value("${spring.mail.username}")
     String username;
+
+    @Value("${spring.mail.nickname}")
+    String nickname;
+
     @RabbitHandler
     public void sendMailMessage(Map<String, Object> data) {
         String type = (String)data.get("type");
@@ -62,7 +66,7 @@ public class MailQueueListener {
         message.setSubject(title);
         message.setText(content);
         message.setTo(email);
-        message.setFrom(username);
+        message.setFrom(nickname+'<'+username+'>');
         return message;
     }
 

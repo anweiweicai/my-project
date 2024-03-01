@@ -82,7 +82,7 @@ function userLogout(){
       <el-container>
         <el-aside width="230px">
           <el-scrollbar style="height: calc(100vh - 55px)">
-            <el-menu style="min-height: calc(100vh - 55px)" default-active="1-1">
+            <el-menu router style="min-height: calc(100vh - 55px)" :default-active="$route.path">
               <el-sub-menu index="1">
                 <template #title>
                   <el-icon><location/></el-icon>
@@ -161,7 +161,7 @@ function userLogout(){
                   <el-icon><operation/></el-icon>
                   <span><b>个人设置</b></span>
                 </template>
-                <el-menu-item>
+                <el-menu-item index="/index/user-setting" @click="router.push('/index/user-setting')">
                   <template #title>
                     <el-icon><user/></el-icon>
                     个人信息设置
@@ -177,7 +177,15 @@ function userLogout(){
             </el-menu>
           </el-scrollbar>
         </el-aside>
-        <el-main>Main</el-main>
+        <el-main class="main-content-page">
+          <el-scrollbar style="height: calc(100vh - 55px)">
+            <router-view v-slot="{Component}">
+              <transition name="el-fade-in-liner" mode="out-in">
+                <component :is="Component" style="height: 100%"/>
+              </transition>
+            </router-view>
+          </el-scrollbar>
+        </el-main>
       </el-container>
     </el-container>
   </div>
@@ -188,7 +196,13 @@ function userLogout(){
   height: 100vh;
   width: 100vw;
 }
-
+.main-content-page{
+  padding: 0;
+  background-color: #f7f8fa;
+}
+.dark .main-content-page{
+  background-color: #242628;
+}
 .main-content-header{
   border-bottom: solid 1px var(--el-border-color);
   height: 55px;

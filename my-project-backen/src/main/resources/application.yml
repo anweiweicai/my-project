@@ -4,6 +4,7 @@ spring:
     username: 18090958048@163.com
     password: VZXGIDBPFAYQOPBB
     default-encoding: UTF-8
+    nickname: xiao菜的测试网站
   rabbitmq:
 #    port: 5672
     addresses: localhost
