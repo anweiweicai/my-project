@@ -39,11 +39,11 @@ const validatePassword = (rule, value, callback) => {
 const rule = {
   username: [
     { validator: validateUsername, trigger: ['blur', 'change']},
-    { min: 1, message: '用户名长度必须在2-8个字符之间', trigger: ['blur', 'change']}
+    { min: 2, max:8, message: '用户名长度必须在2-8个字符之间', trigger: ['blur', 'change']}
   ],
   password: [
     { required: true, message: '请输入密码', trigger: ['blur']},
-    { min: 6, max: 20, message: '用户名长度必须在6-20个字符之间', trigger: ['blur', 'change']}
+    { min: 6, max: 20, message: '密码长度必须在6-20个字符之间', trigger: ['blur', 'change']}
   ],
   password_repeat: [
     { validator: validatePassword, trigger: ['blur', 'change']}

@@ -1,5 +1,6 @@
 package com.example.entity.dto;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -17,5 +18,6 @@ public class AccountDetails {
     String phone;
     String qq;
     String wx;
+    @TableField("`desc`")
     String desc;
 }
