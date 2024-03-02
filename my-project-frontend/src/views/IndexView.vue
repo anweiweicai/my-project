@@ -161,13 +161,13 @@ function userLogout(){
                   <el-icon><operation/></el-icon>
                   <span><b>个人设置</b></span>
                 </template>
-                <el-menu-item index="/index/user-setting" @click="router.push('/index/user-setting')">
+                <el-menu-item index="/index/user-setting">
                   <template #title>
                     <el-icon><user/></el-icon>
                     个人信息设置
                   </template>
                 </el-menu-item>
-                <el-menu-item>
+                <el-menu-item index="/index/privacy-setting" >
                   <template #title>
                     <el-icon><lock/></el-icon>
                     账号安全设置
@@ -180,7 +180,7 @@ function userLogout(){
         <el-main class="main-content-page">
           <el-scrollbar style="height: calc(100vh - 55px)">
             <router-view v-slot="{Component}">
-              <transition name="el-fade-in-liner" mode="out-in">
+              <transition name="el-fade-in-linear" mode="out-in">
                 <component :is="Component" style="height: 100%"/>
               </transition>
             </router-view>

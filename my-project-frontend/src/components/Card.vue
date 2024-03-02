@@ -25,7 +25,7 @@ defineProps({
 
 <style scoped>
 .card{
-  border-radius: 5px;
+  border-radius: 15px;
   border: solid 1px var(--el-border-color);
   background-color: var(--el-bg-color);
   box-sizing: border-box;
