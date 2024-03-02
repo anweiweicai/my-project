@@ -40,6 +40,9 @@ public class MailQueueListener {
             case "reset" -> //重置密码
                 createMessage("密码重置邮件",
                         "您好, 您正在进行重置密码操作, 验证码为: " + code + ", 有效时间为3分钟, 如非本人操作, 请无视", email);
+            case "modify" ->
+                createMessage("您的邮件修改验证邮件",
+                        "您好, 您正在绑定新的电子邮件地址, 验证码: "+code+", 有效时间为3分钟, 如非本人操作, 请无视", email);
             default -> null; // 默认处理
         };
 //        发送HTML格式的文件

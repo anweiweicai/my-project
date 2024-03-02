@@ -6,6 +6,7 @@ import com.example.entity.dto.Account;
 import com.example.entity.vo.request.ConfirmResetVO;
 import com.example.entity.vo.request.EmailRegisterVO;
 import com.example.entity.vo.request.EmailResetVO;
+import com.example.entity.vo.request.ModifyEmailVO;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -97,7 +98,8 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     public String registerEmailAccount(EmailRegisterVO vo) {
         String email = vo.getEmail();
         String username = vo.getUsername();
-        String code = stringRedisTemplate.opsForValue().get(codeRedisKey(email));
+//        String code =  stringRedisTemplate.opsForValue().get(codeRedisKey(email));
+        String code = getEmailVerifyCode(email);
         if (code == null) return "请先获取验证码";
         if (!code.equals(vo.getCode())) return "验证码输入错误, 请重新输入";
         if (this.existsAccountByEmail(email)) return "此电子邮件已被其他用户注册";
@@ -141,8 +143,50 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         String password = encoder.encode(vo.getPassword());
         boolean update = this.update().eq("email", email).set("password", password).update();
         if (update){
-            stringRedisTemplate.delete(codeRedisKey(email));
+//            stringRedisTemplate.delete(codeRedisKey(email));
+            deleteEmailVerifyCode(email);
         }
         return null;
+    }
+
+    /**
+     * 修改电子邮件
+     * @param id
+     * @param vo
+     * @return
+     */
+    @Override
+    public String modifyEmail(int id, ModifyEmailVO vo) {
+        String email = vo.getEmail();
+        String code = getEmailVerifyCode(email);
+        if (code == null) return "请先获取验证码!";
+        if (!code.equals(vo.getCode())) return "验证码错误, 请重新输入";
+        this.deleteEmailVerifyCode(email);
+        Account account = findAccountByNameOrEmail(email);
+        if (account != null && account.getId() != id){
+            return "该电子邮件已经被其它账号绑定";
+        }
+        this.update()
+                .set("email", email)
+                .eq("id", id)
+                .update();
+        return null;
+    }
+
+    /**
+     * 删除redis中对应邮件的验证码缓存
+     * @param email
+     */
+    private void deleteEmailVerifyCode(String email){
+        stringRedisTemplate.delete(codeRedisKey(email));
+    }
+
+    /**
+     * 获取redis中对应邮件的验证码
+     * @param email
+     * @return
+     */
+    private String getEmailVerifyCode(String email){
+        return stringRedisTemplate.opsForValue().get(codeRedisKey(email));
     }
 }
