@@ -2,6 +2,56 @@
 
 import Card from "@/components/Card.vue";
 import {Lock, Setting, Switch} from "@element-plus/icons-vue";
+import {reactive, ref} from "vue";
+import {post} from "@/net/index.js";
+import {ElMessage} from "element-plus";
+
+const form = reactive({
+  password: '',
+  new_password: '',
+  repeat_new_password: ''
+})
+
+const validatePassword = (rule, value, callback) => {
+  if (value === '')
+    callback(new Error('请重复输入新密码'))
+  else if (value !== form.new_password)
+    callback(new Error('两次输入密码不一致'))
+  else
+    callback()
+}
+
+const rule = {
+  password: [
+    {required: true, message: '请输入旧密码', trigger: 'blur'}
+  ],
+  new_password: [
+    {required: true, message: '请输入新密码', trigger: 'blur'},
+    { min: 6, max: 20, message: '密码长度必须在6-20个字符之间', trigger: ['blur', 'change']}
+  ],
+  repeat_new_password: [
+    {required: true, message: '请输入新密码', trigger: 'blur'},
+    { validator: validatePassword, trigger: ['blur', 'change']}
+  ]
+}
+const formRef = ref();
+const valid = ref(false)
+const onValidate = (prop, isValid) => {
+  valid.value = isValid
+}
+
+function resetPassword(){
+  formRef.value.validate(valid => {
+    if (valid){
+      post('/api/user/change-password',form, () => {
+        ElMessage.success('修改密码成功!')
+        formRef.value.resetFields();
+        //是用于重置表单字段的操作。
+        // 通常在密码修改成功后，为了清空当前表单中的密码输入框，以便用户输入新的密码，需要调用该方法将表单字段重置为空。
+      })
+    }
+  })
+}
 </script>
 
 <template>
@@ -17,18 +67,18 @@ import {Lock, Setting, Switch} from "@element-plus/icons-vue";
         </div>
       </card>
       <card style="margin: 20px 0;" :icon="Setting" title="密码修改" desc="修改密码请在这里进行操作, 请务必牢记您的密码">
-        <el-form label-width="100px">
-          <el-form-item label="当前密码">
-            <el-input :prefix-icon="Lock" placeholder="当前密码" maxlength="20"/>
+        <el-form label-width="100px" :model="form" :rules="rule" ref="formRef" @validate="onValidate">
+          <el-form-item label="当前密码" prop="password">
+            <el-input type="password" :prefix-icon="Lock" v-model="form.password" placeholder="当前密码" maxlength="20"/>
           </el-form-item >
-          <el-form-item label="新密码">
-            <el-input :prefix-icon="Lock" placeholder="新密码" maxlength="20"/>
+          <el-form-item label="新密码" prop="new_password">
+            <el-input type="password" :prefix-icon="Lock" v-model="form.new_password" placeholder="新密码" maxlength="20"/>
           </el-form-item>
-          <el-form-item label="重复新密码">
-            <el-input :prefix-icon="Lock" placeholder="重新输入新密码" maxlength="20"/>
+          <el-form-item label="重复新密码" prop="repeat_new_password">
+            <el-input type="password" :prefix-icon="Lock" v-model="form.repeat_new_password" placeholder="重复输入新密码" maxlength="20"/>
           </el-form-item>
           <div style="text-align: center">
-            <el-button :icon="Switch" type="success">立即重置密码</el-button>
+            <el-button @click="resetPassword" :icon="Switch" type="success">立即重置密码</el-button>
           </div>
         </el-form>
       </card>
