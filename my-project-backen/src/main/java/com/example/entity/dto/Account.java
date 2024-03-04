@@ -3,7 +3,6 @@ package com.example.entity.dto;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.example.entity.BaseData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -19,6 +18,7 @@ public class Account {
     String password;
     String email;
     String role;
+    String avatar;
     Date   registerTime;
 }
 //@Data//是 Lombok 提供的注解，它是一个组合注解，包含了`@Getter``@Setter``@ToString``@EqualsAndHashCode` 等注解的功能。使用`@Data` 注解可以自动生成属性的 getter、setter 方法，以及`toString`、`equals`和`hashCode` 方法。

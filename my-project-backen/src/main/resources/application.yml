@@ -31,3 +31,7 @@ spring:
     username: root
     password: cyt238521cyt
     driver-class-name: com.mysql.cj.jdbc.Driver
+  minio:
+    endpoint: 'http://localhost:9000'
+    username: 'minio'
+    password: '12345678'
