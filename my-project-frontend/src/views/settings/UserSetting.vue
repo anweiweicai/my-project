@@ -3,8 +3,9 @@ import {Message, Phone, Refresh, Select, User} from "@element-plus/icons-vue";
 import Card from "@/components/Card.vue";
 import {useStore} from "@/store/index.js";
 import {computed, reactive, ref} from "vue";
-import {get, post} from "@/net/index.js";
+import {accessHeader, get, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
+import axios from "axios";
 
 const store = useStore();
 // computed是一个Vue.js中的计算属性，用于根据响应式数据动态计算出一个新的值
@@ -30,36 +31,40 @@ const emailForm = reactive({
 const validateUsername = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请输入用户名'))
-  }else if(!/^[a-zA-Z0-9\u4e00-\u9fa5]+$/.test(value)){
+  } else if (!/^[a-zA-Z0-9\u4e00-\u9fa5]+$/.test(value)) {
     callback(new Error('用户名不能包含特殊字符, 只能是中/英文'))
-  }else {
+  } else {
     callback()
   }
 }
 
 const rule = {
   username: [
-    { validator: validateUsername, trigger: ['blur', 'change']},
-    { min: 2, max:8, message: '用户名长度必须在2-8个字符之间', trigger: ['blur', 'change']}
+    {validator: validateUsername, trigger: ['blur', 'change']},
+    {min: 2, max: 8, message: '用户名长度必须在2-8个字符之间', trigger: ['blur', 'change']}
   ],
   phone: [
-    { pattern: /^1[0-9]{10}$/, message: '手机号必须是不为0开头的11位数字', trigger: ['blur', 'change']},
+    {pattern: /^1[0-9]{10}$/, message: '手机号必须是不为0开头的11位数字', trigger: ['blur', 'change']},
   ],
   qq: [
-    { pattern: /^[1-9]\d{4,10}$/, message: 'QQ必须是不为0开头的5-11位数字', trigger: ['blur', 'change']}
+    {pattern: /^[1-9]\d{4,10}$/, message: 'QQ必须是不为0开头的5-11位数字', trigger: ['blur', 'change']}
   ],
   wx: [
-    { pattern: /^[a-zA-Z]([-_a-zA-Z0-9]{5,19})+$/, message: '微信号必须以字母开头的6-20位字符，允许使用下划线和连字符', trigger: ['blur', 'change']}
+    {
+      pattern: /^[a-zA-Z]([-_a-zA-Z0-9]{5,19})+$/,
+      message: '微信号必须以字母开头的6-20位字符，允许使用下划线和连字符',
+      trigger: ['blur', 'change']
+    }
   ],
   desc: [
-    { max: 200, message: '简介不能超过200个字符', trigger: ['blur', 'change']}
+    {max: 200, message: '简介不能超过200个字符', trigger: ['blur', 'change']}
   ],
   email: [
-    { required: true, message: '请输入邮件地址', trigger: ['blur']},
-    { type: 'email', message:'请输入合法的电子邮件地址', trigger: ['blur', 'change']}
+    {required: true, message: '请输入邮件地址', trigger: ['blur']},
+    {type: 'email', message: '请输入合法的电子邮件地址', trigger: ['blur', 'change']}
   ],
   code: [
-    { required: true, message: '请输入验证码', trigger: ['blur']},
+    {required: true, message: '请输入验证码', trigger: ['blur']},
   ]
 }
 
@@ -68,11 +73,11 @@ const loading = reactive({
   base: false
 })
 
-function saveDetails(){
+function saveDetails() {
   baseFormRef.value.validate(isValid => {
-    if(isValid){
+    if (isValid) {
       loading.base = true
-      post('api/user/save-details', baseForm, () =>{
+      post('api/user/save-details', baseForm, () => {
         ElMessage.success('用户信息保存成功')
         store.user.username = baseForm.username
         desc.value = baseForm.desc
@@ -99,14 +104,14 @@ get('api/user/details', data => {
 const coldTime = ref(0)
 const isEmailValid = ref(true)
 const onValidate = (prop, isValid) => {
-  if (prop === 'email'){
+  if (prop === 'email') {
     isEmailValid.value = isValid;
   }
 }
 
-function sendEmailCode(){
+function sendEmailCode() {
   emailFormRef.value.validate(isValid => {
-    if (isValid){
+    if (isValid) {
       coldTime.value = 60
       get(`/api/auth/ask-code?email=${emailForm.email}&type=modify`, () => {
         ElMessage.success(`验证码已成功发送到邮箱: ${emailForm.email}, 请注意查收`)
@@ -125,7 +130,7 @@ function sendEmailCode(){
   })
 }
 
-function modifyEmail(){
+function modifyEmail() {
   emailFormRef.value.validate(isValid => {
     post('api/user/modify-email', emailForm, () => {
       ElMessage.success('邮件修改成功')
@@ -136,13 +141,30 @@ function modifyEmail(){
   })
 }
 
+function beforeAvatarUpload(rawFile){
+  if (rawFile.type !== 'image/jpeg' && rawFile.type !== 'image/png'){
+    ElMessage.error('头像只能是 JPG/PNG 格式')
+    return false
+  }else if (rawFile.size / 1024 > 200){
+    ElMessage.error('头像大小不能大于200KB')
+    return false
+  }
+  return true
+}
+
+function uploadSuccess(response){
+  ElMessage.success('头像上传成功')
+  store.user.avatar = response.data
+}
 </script>
 
 <template>
-  <div style="display: flex; max-width: 950px; margin: auto" >
+  <div style="display: flex; max-width: 950px; margin: auto">
     <div class="setting-left">
-      <card :icon="User" title="账号信息设置" desc="在这里编辑您的个人信息, 您可以在隐私设置中选择是否展示这些信息" v-loading="loading.form">
-        <el-form :model="baseForm" :rules="rule" ref="baseFormRef" label-position="top" style="margin: 0 10px 10px 10px">
+      <card :icon="User" title="账号信息设置" desc="在这里编辑您的个人信息, 您可以在隐私设置中选择是否展示这些信息"
+            v-loading="loading.form">
+        <el-form :model="baseForm" :rules="rule" ref="baseFormRef" label-position="top"
+                 style="margin: 0 10px 10px 10px">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="baseForm.username" maxlength="10"/>
           </el-form-item>
@@ -152,7 +174,7 @@ function modifyEmail(){
               <el-radio :label="1">女</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="手机号" prop="phone" >
+          <el-form-item label="手机号" prop="phone">
             <el-input v-model="baseForm.phone" maxlength="11"/>
           </el-form-item>
           <el-form-item label="QQ号" prop="qq">
@@ -182,7 +204,7 @@ function modifyEmail(){
               <el-col :span="6">
                 <el-button @click="sendEmailCode" type="success" style="width: 100%"
                            :disabled="!isEmailValid || coldTime > 0" plain>
-                  {{ coldTime > 0 ? `请稍后${coldTime}秒` : '获取验证码'}}
+                  {{ coldTime > 0 ? `请稍后${coldTime}秒` : '获取验证码' }}
                 </el-button>
               </el-col>
             </el-row>
@@ -197,8 +219,18 @@ function modifyEmail(){
       <div style="position: sticky; top: 20px">
         <card>
           <div style="text-align: center; padding: 5px 15px 0 15px">
-              <el-avatar :size="70" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"/>
-              <div style="font-weight: bold">你好, {{store.user.username}}</div>
+            <el-avatar :size="70" :src="store.avatarUrl"/>
+            <div style="margin: 5px 0">
+              <el-upload
+                  :action="axios.defaults.baseURL + '/api/image/avatar'"
+                  :show-file-list="false"
+                  :before-upload="beforeAvatarUpload"
+                  :on-success="uploadSuccess"
+                  :headers="accessHeader()">
+                <el-button size="small" round>修改头像</el-button>
+              </el-upload>
+            </div>
+            <div style="font-weight: bold">你好, {{ store.user.username }}</div>
           </div>
           <el-divider style="margin: 10px 0"/>
           <div style="font-size: 14px; color: grey; padding: 10px">
@@ -217,11 +249,12 @@ function modifyEmail(){
 </template>
 
 <style scoped>
-.setting-left{
+.setting-left {
   flex: 1;
   margin: 20px;
 }
-.setting-right{
+
+.setting-right {
   width: 300px;
   margin: 20px 30px 20px 0;
 }

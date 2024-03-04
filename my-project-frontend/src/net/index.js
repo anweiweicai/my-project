@@ -100,4 +100,4 @@ function unauthorized(){//是否登录, 即是否通过身份验证, 未登录�
 }
 
 
-export {login, logout, get, post, unauthorized}
+export {login, logout, get, post, unauthorized, accessHeader}
