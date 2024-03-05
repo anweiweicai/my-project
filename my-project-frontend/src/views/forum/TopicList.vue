@@ -3,11 +3,40 @@
 import LightCard from "@/components/LightCard.vue";
 import {Calendar, CollectionTag, EditPen, Link} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed} from "vue";
+import {computed, reactive} from "vue";
+import {get} from "@/net/index.js";
+import {ElMessage} from "element-plus";
+
+const weather = reactive({
+  location: {},
+  now: {},
+  hourly: [],
+  success: false
+})
 
 const today = computed(() => {
   const date = new Date()
   return `${date.getFullYear()} 年 ${date.getMonth()} 月 ${date.getDay()} 日`
+})
+// 获取当前位置
+navigator.geolocation.getCurrentPosition((position) => {
+  const {latitude, longitude} = position.coords
+  get(`api/forum/weather?longitude=${longitude}&latitude=${latitude}`, data => {
+    Object.assign(weather, data) // 将data对象中的所有属性复制到weather对象中
+    weather.success = true
+  }, error => {
+    console.info(error)
+    ElMessage.warning("位置信息获取超时, 请检查您的网络或重试")
+    // 获取天气信息失败时, 给出默认位置的天气信息
+    get('api/forum/weather?longitude=116.397428&latitude=39.90923', data => {
+      Object.assign(weather, data) // 将data对象中的所有属性复制到weather对象中
+      weather.success = true
+    })
+  }, {
+    // 设置超时
+    timeout: 3000,
+    enableHighAccuracy: true //表示浏览器将尽可能地提供高精度的位置信息，即在尽量减小定位误差的情况下获取设备的位置信息
+  })
 })
 
 </script>
@@ -48,7 +77,7 @@ const today = computed(() => {
             天气信息
           </div>
           <el-divider style="margin: 10px 0"/>
-          <weather/>
+          <weather :data="weather"/>
         </light-card>
         <light-card>
           <div class="info-text">

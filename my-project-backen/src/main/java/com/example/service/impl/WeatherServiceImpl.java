@@ -21,7 +21,7 @@ public class WeatherServiceImpl implements WeatherService  {
     RestTemplate restTemplate;
 
    @Resource
-   StringRedisTemplate redisTemplate;
+   StringRedisTemplate template;
 
    @Value("${spring.weather.key}")
    String key;
@@ -45,17 +45,17 @@ public class WeatherServiceImpl implements WeatherService  {
      */
     private WeatherVO fetchFromCache(double latitude, double longitude) {
         // 将压缩的字符串解压并转换为JSON对象
-        JSONObject geo = this.decompressStringToJson(restTemplate.getForObject("https://geoapi.qweather.com/v2/city/lookup?lacation=" + longitude + "," + latitude + "&key=" + key, byte[].class));
+        JSONObject geo = this.decompressStringToJson(restTemplate.getForObject("https://geoapi.qweather.com/v2/city/lookup?location=" + longitude + "," + latitude + "&key=" + key, byte[].class));
         // 如果geo对象为空，则返回null
         if (geo == null) return null;
         // 从geo对象中获取location对象
-        JSONObject location = geo.getJSONObject("location");
+        JSONObject location = geo.getJSONArray("location").getJSONObject(0);
         // 从location对象中获取id字段
         int id = location.getInteger("id");
         // 创建缓存键值
         String key = "weather:" + id;
         // 从redis缓存中获取数据
-        String cache = redisTemplate.opsForValue().get(key);
+        String cache = template.opsForValue().get(key);
         // 如果缓存不为空，则将其转换为WeatherVO对象并返回
         if (cache != null) {
             return JSONObject.parseObject(cache).to(WeatherVO.class);
@@ -65,7 +65,7 @@ public class WeatherServiceImpl implements WeatherService  {
         // 如果获取的WeatherVO对象为空，则返回null
         if (vo == null) return null;
         // 将获取的WeatherVO对象存入redis缓存，有效期为1小时
-        redisTemplate.opsForValue().set(key, JSONObject.from(vo).toJSONString(), 1, TimeUnit.HOURS);
+        template.opsForValue().set(key, JSONObject.from(vo).toJSONString(), 1, TimeUnit.HOURS);
         // 返回获取的WeatherVO对象
         return vo;
     }
