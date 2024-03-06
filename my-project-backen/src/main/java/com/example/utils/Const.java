@@ -16,4 +16,6 @@ public class Const {
     public static final String FLOW_LIMIT_COUNTER = "flow:counter:";
     public static final String FLOW_LIMIT_BLOCK = "flow:block:";
 
+    public static final String FORUM_WEATHER_CACHE = "weather:cache:";
+    public static final String FORUM_IMAGE_COUNTER = "forum:image:counter:";
 }
