@@ -1,20 +1,21 @@
 <script setup>
 import {Check, Document} from "@element-plus/icons-vue"
-import {reactive} from "vue";
+import {computed, reactive, ref} from "vue";
 import {Quill, QuillEditor} from "@vueup/vue-quill";
 import ImageResize from "quill-image-resize-vue"; // 调整图片大小
 import {ImageExtend, QuillWatch} from "quill-image-super-solution-module"; // 上传图片
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import axios from "axios";
-import {accessHeader, get} from "@/net/index.js";
+import {accessHeader, get, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 
 defineProps({
   show: Boolean
 })
 // emit是用来向父组件传递事件的函数
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'success'])
 
+const refEditor = ref()
 const editor = reactive({
   type: 1,
   title: '',
@@ -23,9 +24,62 @@ const editor = reactive({
   types: []
 })
 
+/**
+ *  初始化富文本
+ */
+function initEditor() {
+  refEditor.value.setContents('', 'user')
+  editor.title = ''
+  editor.type = 1
+}
 
+/**
+ * 将富文本delta转换为纯文本
+ * @param delta
+ * @returns {string}
+ */
+function deltaToText(delta){
+  if (!delta.ops) return  ''
+  let str = ''
+  for (let op of delta.ops) {
+    str += op.insert
+  }
+  return str.replace(/\s/g, '')
+}
+
+/**
+ * 计算富文本的字数
+ * @type {ComputedRef<number>}
+ */
+const contentLength = computed(() => {
+  return deltaToText(editor.content).length
+})
 function submitTopic() {
-  console.info(editor.content)
+  const text = deltaToText(editor.content)
+  if(text.length > 20000){
+    ElMessage.warning('字数超出限制, 无法发布!')
+    return
+  }
+  if (!editor.title) {
+    ElMessage.warning('帖子标题不能为空!')
+    return
+  }
+  if (!editor.type) {
+    ElMessage.warning('请选择主题类型!')
+    return
+  }
+  if (!editor.content) {
+    ElMessage.warning('帖子内容不能为空!')
+    return
+  }
+  post('/api/forum/create-topic', {
+    type: editor.type,
+    title: editor.title,
+    content: editor.content
+  }, () => {
+    ElMessage.success('帖子发布成功!')
+    emit('success')
+  })
 }
 
 get('/api/forum/types', data => {
@@ -90,7 +144,7 @@ const editorOption = {
   <div>
     <el-drawer :model-value="show"
                direction="btt" :size="650" :close-on-click-modal="false"
-               @close="emit('close')">
+               @close="emit('close')" @open="initEditor">
 <!--     :close-on-click-modal="false" 为了防止点击遮罩层关闭 -->
       <template #header>
         <div>
@@ -106,17 +160,17 @@ const editorOption = {
         </div>
         <div style="flex: 1">
           <el-input v-model="editor.title"  :placeholder="`添加帖子标题: ${editor.types[editor.type-1].desc}`" :prefix-icon="Document"
-          style="height: 100%"/>
+          style="height: 100%" maxlength="30"/>
         </div>
       </div>
       <div style="margin-top: 15px; height: 460px; overflow: hidden; border-radius: 5px" v-loading="editor.uploading" element-loading-text="正在上传图片, 请稍后...">
         <quill-editor v-model:content="editor.content" style="height: calc(100% - 45px)" placeholder="今天分享点什么呢..."
-                      content-type="delta"
+                      content-type="delta" ref="refEditor"
                       :options="editorOption"/><!-- content-type="delta" 是为了兼容富文本以json格式保存-->
       </div>
       <div style="display: flex; justify-content: space-between; margin-top: 5px;">
         <div style=" color: grey; font-size: 13px">
-          当前字数:666(最大支持字数:20000)
+          当前字数:{{ contentLength }}(最大支持字数:20000)
         </div>
         <div>
           <el-button type="success" :icon="Check" plain @click="submitTopic">立即发布</el-button>

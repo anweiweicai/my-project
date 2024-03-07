@@ -15,6 +15,7 @@ import com.example.service.AccountDetailsService;
 import com.example.service.AccountPrivacyService;
 import com.example.service.AccountService;
 import com.example.utils.Const;
+import com.example.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
@@ -36,6 +37,8 @@ public class AccountController {
     @Resource
     AccountPrivacyService privacyService;
 
+    @Resource
+    ControllerUtils utils;
     @GetMapping("/info")
     //从request中获取id
     public RestBean<AccountVO> info(@RequestAttribute(Const.ATTR_USER_ID) int id){
@@ -66,13 +69,13 @@ public class AccountController {
     @PostMapping("/modify-email")
     public RestBean<Void> modifyEmail(@RequestAttribute(Const.ATTR_USER_ID) int id,
                                       @RequestBody @Valid ModifyEmailVO vo){
-        return this.messageHandle(() -> service.modifyEmail(id, vo));
+        return utils.messageHandle(() -> service.modifyEmail(id, vo));
     }
 
     @PostMapping("/change-password")
     public RestBean<Void> changePassword(@RequestAttribute(Const.ATTR_USER_ID) int id,
                                          @RequestBody @Valid ChangePasswordVO vo){
-        return this.messageHandle(() -> service.changePassword(id, vo));
+        return utils.messageHandle(() -> service.changePassword(id, vo));
     }
 
     @PostMapping("/save-privacy")
@@ -90,8 +93,5 @@ public class AccountController {
         return RestBean.success(vo);
     }
 
-    private RestBean<Void> messageHandle(Supplier<String> action){
-        String message = action.get();
-        return message == null ? RestBean.success() : RestBean.failure(400, message);
-    }
+
 }
