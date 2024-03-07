@@ -6,7 +6,7 @@ import ImageResize from "quill-image-resize-vue"; // 调整图片大小
 import {ImageExtend, QuillWatch} from "quill-image-super-solution-module"; // 上传图片
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import axios from "axios";
-import {accessHeader} from "@/net/index.js";
+import {accessHeader, get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 
 defineProps({
@@ -19,19 +19,18 @@ const editor = reactive({
   type: 1,
   title: '',
   content: '',
-  loading: false
+  loading: false,
+  types: []
 })
-const types = [
-  {id: 1, name: "日常闲聊", desc:'在这里分享自己的日常生活...'},
-  {id: 2, name: "真诚交友", desc:'在这里寻找志同道合的朋友...'},
-  {id: 3, name: "问题反馈", desc:'在这里提出你的问题或者建议...'},
-  {id: 4, name: "恋爱官宣", desc:'在这里宣传你的恋爱关系...'},
-  {id: 5, name: "踩坑记录", desc:'在这里记录你的踩坑经历, 防止其他人踩坑...'}
-]
+
 
 function submitTopic() {
   console.info(editor.content)
 }
+
+get('/api/forum/types', data => {
+  editor.types = data
+})
 
 Quill.register('modules/imageResize', ImageResize)
 Quill.register('modules/ImageExtend', ImageExtend)
@@ -61,7 +60,6 @@ const editorOption = {
       action:  axios.defaults.baseURL + '/api/image/cache',
       name: 'file',
       size: 5,
-      loading: true,
       accept: 'image/png, image/jpeg',
       response: (resp) => {
         if(resp.data) {
@@ -102,17 +100,17 @@ const editorOption = {
       </template>
       <div style="display: flex; gap: 10px">
         <div style="width: 150px">
-          <el-select placeholder="选择主题类型..." v-model="editor.type">
-            <el-option v-for="item in types" :label="item.name" :value="item.id"/>
+          <el-select placeholder="选择主题类型..." v-model="editor.type" :disabled="!editor.types.length">
+            <el-option v-for="item in editor.types" :label="item.name" :value="item.id"/>
           </el-select>
         </div>
         <div style="flex: 1">
-          <el-input v-model="editor.title"  :placeholder="`${types[editor.type-1].desc}`" :prefix-icon="Document"
+          <el-input v-model="editor.title"  :placeholder="`添加帖子标题: ${editor.types[editor.type-1].desc}`" :prefix-icon="Document"
           style="height: 100%"/>
         </div>
       </div>
-      <div style="margin-top: 15px; height: 460px; overflow: hidden; border-radius: 5px" v-loading="editor.loading" element-loading-text="正在上传图片, 请稍后...">
-        <quill-editor v-model:content="editor.content" style="height: calc(100% - 45px)" placeholder="今天想分享点什么呢?"
+      <div style="margin-top: 15px; height: 460px; overflow: hidden; border-radius: 5px" v-loading="editor.uploading" element-loading-text="正在上传图片, 请稍后...">
+        <quill-editor v-model:content="editor.content" style="height: calc(100% - 45px)" placeholder="今天分享点什么呢..."
                       content-type="delta"
                       :options="editorOption"/><!-- content-type="delta" 是为了兼容富文本以json格式保存-->
       </div>
