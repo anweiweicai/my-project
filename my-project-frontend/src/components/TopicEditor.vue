@@ -8,6 +8,7 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import axios from "axios";
 import {accessHeader, get, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
+import ColorDot from "@/components/ColorDot.vue";
 
 defineProps({
   show: Boolean
@@ -155,7 +156,12 @@ const editorOption = {
       <div style="display: flex; gap: 10px">
         <div style="width: 150px">
           <el-select placeholder="选择主题类型..." v-model="editor.type" :disabled="!editor.types.length">
-            <el-option v-for="item in editor.types" :label="item.name" :value="item.id"/>
+            <el-option v-for="item in editor.types" :value="item.id" :label="item.name" >
+              <div>
+                <color-dot :color="item.color"/>
+                <span :style="{color: item.color}" style="margin-left: 10px ">{{ item.name }}</span>
+              </div>
+            </el-option>
           </el-select>
         </div>
         <div style="flex: 1">
