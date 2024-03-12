@@ -6,23 +6,23 @@ import ImageResize from "quill-image-resize-vue"; // 调整图片大小
 import {ImageExtend, QuillWatch} from "quill-image-super-solution-module"; // 上传图片
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import axios from "axios";
-import {accessHeader, get, post} from "@/net/index.js";
+import {accessHeader, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import ColorDot from "@/components/ColorDot.vue";
+import {useStore} from "@/store/index.js";
 
 defineProps({
   show: Boolean
 })
 // emit是用来向父组件传递事件的函数
 const emit = defineEmits(['close', 'success'])
-
+const store = useStore()
 const refEditor = ref()
 const editor = reactive({
   type: 1,
   title: '',
   content: '',
-  loading: false,
-  types: []
+  loading: false
 })
 
 /**
@@ -83,9 +83,6 @@ function submitTopic() {
   })
 }
 
-get('/api/forum/types', data => {
-  editor.types = data
-})
 
 Quill.register('modules/imageResize', ImageResize)
 Quill.register('modules/ImageExtend', ImageExtend)
@@ -155,8 +152,8 @@ const editorOption = {
       </template>
       <div style="display: flex; gap: 10px">
         <div style="width: 150px">
-          <el-select placeholder="选择主题类型..." v-model="editor.type" :disabled="!editor.types.length">
-            <el-option v-for="item in editor.types" :value="item.id" :label="item.name">
+          <el-select placeholder="选择主题类型..." v-model="editor.type" :disabled="!store.forum.types.length">
+            <el-option v-for="item in store.forum.types" :value="item.id" :label="item.name">
               <div>
                 <color-dot :color="item.color"/>
                 <span :style="{color: item.color}" style="margin-left: 10px ">{{ item.name }}</span>
@@ -165,7 +162,7 @@ const editorOption = {
           </el-select>
         </div>
         <div style="flex: 1">
-          <el-input v-model="editor.title"  :placeholder="`添加帖子标题: ${editor.types[editor.type-1].desc}`" :prefix-icon="Document"
+          <el-input v-model="editor.title"  :placeholder="`添加帖子标题: ${store.forum.types[editor.type-1].desc}`" :prefix-icon="Document"
           style="height: 100%" maxlength="30"/>
         </div>
       </div>
@@ -179,7 +176,7 @@ const editorOption = {
           当前字数:{{ contentLength }}(最大支持字数:20000)
         </div>
         <div>
-          <el-button type="success" :icon="Check" plain @click="submitTopic">立即发布</el-button>
+          <el-button type="success" :icon="Check" plain @click="submitTopic" >立即发布</el-button>
         </div>
       </div>
     </el-drawer>

@@ -122,12 +122,12 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 if (previewText.length() >= 300) break;
                 previewText.append(text);
             } else if (insert instanceof Map<?,?> map) {
-                Optional.ofNullable(map.get("image"))
+                Optional.ofNullable(map.get("images"))
                         .ifPresent(obj -> images.add(obj.toString()));
             }
         }
         vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) + "..." : previewText.toString());
-        vo.setImage(images);
+        vo.setImages(images);
         return vo;
     }
 

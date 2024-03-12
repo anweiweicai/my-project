@@ -35,5 +35,10 @@ spring:
     endpoint: 'http://localhost:9000'
     username: 'minio'
     password: '12345678'
+#    设定请求最大可接受文件大小
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   weather:
     key: 60fe141136c34a2a845d51ecb9530ff3
