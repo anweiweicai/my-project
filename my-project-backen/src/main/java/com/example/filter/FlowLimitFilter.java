@@ -52,7 +52,7 @@ public class FlowLimitFilter extends HttpFilter {
             Long increment =  Optional.ofNullable(template.opsForValue().increment(Const.FLOW_LIMIT_COUNTER + ip)).orElse(0L);
             // 使用了Optional类来处理可能为null的情况。首先尝试从缓存中获取以用户IP地址为key的计数器的值，然后对其进行自增操作。
             // 如果获取到的值为null，则将其替换为0，然后再进行自增操作。最终返回自增后的计数器的值
-            if (increment > 10){
+            if (increment > 100){
                 template.opsForValue().set(Const.FLOW_LIMIT_BLOCK + ip, "", 30, TimeUnit.SECONDS);
                 return false;
             }
