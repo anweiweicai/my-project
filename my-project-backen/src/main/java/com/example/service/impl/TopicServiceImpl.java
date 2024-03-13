@@ -3,15 +3,14 @@ package com.example.service.impl;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.entity.dto.Topic;
-import com.example.entity.dto.TopicType;
+import com.example.entity.dto.*;
 import com.example.entity.vo.request.TopicCreateVO;
+import com.example.entity.vo.response.TopicDetailVO;
 import com.example.entity.vo.response.TopicPreviewVO;
 import com.example.entity.vo.response.TopicTopVO;
-import com.example.mapper.AccountMapper;
-import com.example.mapper.TopicMapper;
-import com.example.mapper.TopicTypeMapper;
+import com.example.mapper.*;
 import com.example.service.TopicService;
 import com.example.utils.CacheUtils;
 import com.example.utils.Const;
@@ -31,6 +30,12 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     AccountMapper accountMapper;
+
+    @Resource
+    AccountDetailsMapper accountDetailsMapper;
+
+    @Resource
+    AccountPrivacyMapper accountPrivacyMapper;
 
     @Resource
     FlowUtils flowUtils;
@@ -73,8 +78,6 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
-        topic.setUsername(accountMapper.selectById(uid).getUsername());
-        topic.setAvatar(accountMapper.selectById(uid).getAvatar());
         if (this.save(topic)) {
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             // 帖子发表后, 需要更新帖子预览表, 需要删除缓存中之前的的帖子预览列表, 重新请求
@@ -86,21 +89,26 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     /**
      * 获取帖子预览列表
-     * @param page 当前页
+     * @param pageNumber 当前页
      * @param type 类型
      * @return 放回帖子预览列表
      */
     @Override
-    public List<TopicPreviewVO> listTopicByPage(int page, int type) {
-        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + page + ":" + type;
+    public List<TopicPreviewVO> listTopicByPage(int pageNumber, int type) {
+        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + pageNumber + ":" + type;
         List<TopicPreviewVO> list = cacheUtils.takeListFromCache(key, TopicPreviewVO.class);
         if (list != null) return list;
-        List<Topic> topics;
+        // 从数据库中获取 帖子预览列表
+        Page<Topic> page = Page.of(pageNumber, 10);
         if (type == 0){
-            topics = baseMapper.topicList(page * 10);
+            // 通过mybatisplus的分页插件获取分页数, 从而实现帖子预览
+            baseMapper.selectPage(page, Wrappers.<Topic>query().orderByDesc("time"));
         }else {
-            topics = baseMapper.topicLisByType(page * 10, type);
+            // 通过mybatisplus的分页插件获取分页数, 从而实现帖子预览
+             baseMapper.selectPage(page, Wrappers.<Topic>query().eq("type", type).orderByDesc("time"));
         }
+        // 将分页结果转换为帖子预览
+        List<Topic> topics = page.getRecords();
         if (topics.isEmpty()) return null;
         list = topics.stream().map(this::resolveToPreview).toList();
         cacheUtils.saveListToCache(key, list, 60);
@@ -119,6 +127,28 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }).toList();
     }
 
+    @Override
+    public TopicDetailVO getTopic(int tid) {
+        TopicDetailVO vo = new TopicDetailVO();
+        Topic topic = baseMapper.selectById(tid);
+        BeanUtils.copyProperties(topic, vo);
+        TopicDetailVO.User user = new TopicDetailVO.User();
+        vo.setUser(this.fillUserDetailsByPrivacy(user, topic.getUid()));
+        return vo;
+    }
+
+    private <T> T fillUserDetailsByPrivacy(T target, int uid){
+        AccountDetails details = accountDetailsMapper.selectById(uid);
+        Account account = accountMapper.selectById(uid);
+        AccountPrivacy accountPrivacy = accountPrivacyMapper.selectById(uid);
+        // 获取用户隐私设置中设置了不公开的隐私信息
+        String[] ignores = accountPrivacy.hiddenFields();
+        // 拷贝用户信息到目标对象中并且不将 ignores中的字段拷贝
+        BeanUtils.copyProperties(account, target, ignores);
+        BeanUtils.copyProperties(details, target, ignores);
+        return target;
+    }
+
     /**
      * 将Topic转换为TopicPreview
      * @param topic
@@ -126,6 +156,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
      */
     private TopicPreviewVO resolveToPreview(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
+        // 获取帖子发起人信息
+        BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()), vo);
         BeanUtils.copyProperties(topic, vo);
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
