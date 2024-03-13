@@ -76,7 +76,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setUsername(accountMapper.selectById(uid).getUsername());
         topic.setAvatar(accountMapper.selectById(uid).getAvatar());
         if (this.save(topic)) {
-            cacheUtils.deleteCache(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
+            cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             // 帖子发表后, 需要更新帖子预览表, 需要删除缓存中之前的的帖子预览列表, 重新请求
             return null;
         }else {
@@ -103,7 +103,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }
         if (topics.isEmpty()) return null;
         list = topics.stream().map(this::resolveToPreview).toList();
-        cacheUtils.saveListToCache(key, list, 10);
+        cacheUtils.saveListToCache(key, list, 60);
         return list;
     }
 

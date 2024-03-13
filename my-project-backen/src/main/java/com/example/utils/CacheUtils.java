@@ -6,7 +6,10 @@ import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -60,6 +63,13 @@ public class CacheUtils {
      */
     public <T> void saveListToCache(String key, List<T> list, long expire) {
         template.opsForValue().set(key, JSONArray.from(list).toJSONString(), expire, TimeUnit.SECONDS);
+    }
+
+    public void deleteCachePattern(String key) {
+        Set<String> keys= Optional.ofNullable(template.keys(key)).orElse(Collections.emptySet());
+//        整体的功能是如果template.keys(key)方法返回的结果为null，那么将空的Set集合作为默认结果返回；如果template.keys(key)方法返回的结果不为null，则返回包含结果的集合
+        template.delete(keys);
+
     }
 
     /**
