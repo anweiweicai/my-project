@@ -31,4 +31,14 @@ public interface TopicMapper extends BaseMapper<Topic> {
             </script>
             """)
     int deleteInteract(List<Interact> interacts, String type);
+
+    @Select("""
+            select count(*) from db_topic_interact_${type} where tid = #{tid}
+            """)
+    int interactCount(int tid, String type);
+
+    @Select("""
+            select count(*) from db_topic_interact_${type} where tid = #{tid} and uid = #{uid}
+            """)
+    int userInteractCount(int tid, int uid, String type);
 }

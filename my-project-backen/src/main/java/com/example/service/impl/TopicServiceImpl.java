@@ -139,6 +139,11 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         TopicDetailVO vo = new TopicDetailVO();
         Topic topic = baseMapper.selectById(tid);
         BeanUtils.copyProperties(topic, vo);
+        TopicDetailVO.Interact interact = new TopicDetailVO.Interact(
+                hasInteract(tid, topic.getUid(), "like"),
+                hasInteract(tid, topic.getUid(), "collect")
+        );
+        vo.setInteract(interact);
         TopicDetailVO.User user = new TopicDetailVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user, topic.getUid()));
         return vo;
@@ -151,6 +156,14 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             template.opsForHash().put(type, interact.toKey(), Boolean.toString(state));
             this.saveInteractSchedule(type);
         }
+    }
+
+    private boolean hasInteract(int tid, int uid, String type){
+        String key = tid + ":" + uid;
+        if (template.opsForHash().hasKey(type, key)){
+            return Boolean.parseBoolean(template.opsForHash().entries(type).get(key).toString());
+        }
+        return baseMapper.userInteractCount(tid, uid, type) > 0;
     }
 
     /**
@@ -228,6 +241,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         // 获取帖子发起人信息
         BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()), vo);
         BeanUtils.copyProperties(topic, vo);
+        vo.setLike(baseMapper.interactCount(topic.getId(), "like"));
+        vo.setCollect(baseMapper.interactCount(topic.getId(), "collect"));
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");

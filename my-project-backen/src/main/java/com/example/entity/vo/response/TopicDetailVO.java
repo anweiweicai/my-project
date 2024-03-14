@@ -1,5 +1,6 @@
 package com.example.entity.vo.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.Date;
@@ -12,6 +13,15 @@ public class TopicDetailVO {
     Integer type;
     Date time;
     User user;
+    Interact interact;
+
+    @Data
+    @AllArgsConstructor
+    public static class Interact {
+        boolean like;
+        boolean collect;
+    }
+
     @Data
     public static class User {
         Integer id;
