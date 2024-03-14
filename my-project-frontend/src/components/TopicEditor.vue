@@ -111,6 +111,7 @@ const editorOption = {
     ImageExtend: {
       action:  axios.defaults.baseURL + '/api/image/cache',
       name: 'file',
+      maxSize: 3 * 1024 * 1024,
       size: 5,
       accept: 'image/png, image/jpeg',
       response: (resp) => {
@@ -153,7 +154,7 @@ const editorOption = {
       <div style="display: flex; gap: 10px">
         <div style="width: 150px">
           <el-select placeholder="选择主题类型..." v-model="editor.type" :disabled="!store.forum.types.length">
-            <el-option v-for="item in store.forum.types" :value="item.id" :label="item.name">
+            <el-option v-for="item in store.forum.types.filter(type => type.id > 0)" :value="item.id" :label="item.name">
               <div>
                 <color-dot :color="item.color"/>
                 <span :style="{color: item.color}" style="margin-left: 10px ">{{ item.name }}</span>
@@ -162,7 +163,7 @@ const editorOption = {
           </el-select>
         </div>
         <div style="flex: 1">
-          <el-input v-model="editor.title"  :placeholder="`添加帖子标题: ${store.forum.types[editor.type-1].desc}`" :prefix-icon="Document"
+          <el-input v-model="editor.title"  :placeholder="`添加帖子标题: ${store.forum.types[editor.type].desc}`" :prefix-icon="Document"
           style="height: 100%" maxlength="30"/>
         </div>
       </div>

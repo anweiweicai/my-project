@@ -22,8 +22,9 @@ import {useStore} from "@/store/index.js";
 import axios from "axios";
 import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router/index.js";
+import TopicTag from "@/components/TopicTag.vue";
 
-const weather = reactive({
+const weatherInfo = reactive({
   location: {},
   now: {},
   hourly: [],
@@ -32,7 +33,6 @@ const weather = reactive({
 const store = useStore()
 
 const editor = ref(false)
-const types = ref()
 const topics = reactive({
   list: [],
   type: 0,
@@ -50,16 +50,6 @@ const today = computed(() => {
   return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日`
 })
 
-/**
- * 获取论坛类型
- */
-get('/api/forum/types', data => {
-  const array = []
-  array.push({name: '全部', id: 0, color: 'linear-gradient(45deg, white, red, orange, gold, green, blue)'})
-  data.forEach(d => array.push(d))
-  types.value = array
-  store.forum.types = data
-})
 /**
  * 获取置顶
  */
@@ -103,15 +93,15 @@ function resetList(){
 navigator.geolocation.getCurrentPosition((position) => {
   const {latitude, longitude} = position.coords
   get(`api/forum/weather?longitude=${longitude}&latitude=${latitude}`, data => {
-    Object.assign(weather, data) // 将data对象中的所有属性复制到weather对象中
-    weather.success = true
+    Object.assign(weatherInfo, data) // 将data对象中的所有属性复制到weather对象中
+    weatherInfo.success = true
   }, error => {
     console.info(error)
     ElMessage.warning("位置信息获取超时, 请检查您的网络或重试")
     // 获取天气信息失败时, 给出默认位置的天气信息
     get('api/forum/weather?longitude=116.397428&latitude=39.90923', data => {
-      Object.assign(weather, data) // 将data对象中的所有属性复制到weather对象中
-      weather.success = true
+      Object.assign(weatherInfo, data) // 将data对象中的所有属性复制到weather对象中
+      weatherInfo.success = true
     })
   }, {
     // 设置超时
@@ -139,15 +129,16 @@ navigator.geolocation.getCurrentPosition((position) => {
         </div>
       </light-card>
       <light-card style="margin-top: 10px; display: flex; flex-direction: column;gap: 10px">
-        <div v-for="item in topics.top" class="top-topic">
-          <el-tag type="info" size="small">置顶</el-tag>
+        <div v-for="item in topics.top" class="top-topic"
+             @click="router.push('/index/topic-detail/' + item.id)" style="">
+          <el-tag type="info" size="small" style="color: white; background-color: rgba(185,23,2,0.7); font-weight: bold">置顶</el-tag>
           <div>{{ item.title }}</div>
           <div>{{ new Date(item.time).toLocaleDateString() }}</div>
         </div>
       </light-card>
       <light-card style="margin-top: 10px; display: flex; gap: 8px">
         <div :class="`type-select-card ${topics.type === item.id ? 'active' : ''}`"
-             v-for="item in types" @click="topics.type = item.id">
+             v-for="item in store.forum.types" @click="topics.type = item.id">
           <color-dot :color="item.color"></color-dot>
           <span style="margin-left: 11px">{{ item.name }}</span>
         </div>
@@ -156,7 +147,8 @@ navigator.geolocation.getCurrentPosition((position) => {
         <div v-if="topics.list?.length">
           <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px"
                v-infinite-scroll="updateList">
-            <light-card  v-for="item in topics.list" class="topic-card" @click="router.push('/index/topic-detail/' + item.id)">
+            <light-card  v-for="item in topics.list" class="topic-card"
+                         @click="router.push('/index/topic-detail/' + item.id)">
               <div style="display: flex">
                 <div>
                   <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
@@ -170,19 +162,12 @@ navigator.geolocation.getCurrentPosition((position) => {
                 </div>
               </div>
               <div  v-if="store.findTypeById(item.type)" style="margin-top: 5px">
-                <div class="topic-type"
-                     :style="{
-              color: store.findTypeById(item.type).color + 'EE',
-              'border-color': store.findTypeById(item.type).color + 'DD',
-              'background-color': store.findTypeById(item.type).color + '33'
-            }">
-                  {{ store.findTypeById(item.type).name}}
-                </div>
+                <topic-tag :type="item.type"/>
                 <span style="font-weight: bold; margin-left: 7px">{{ item.title }}</span>
               </div>
               <div class="topic-content">{{ item.text }}</div>
               <div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 10px">
-                <el-image class="topic-image" v-for="img in item.images" :src="`${img}`"></el-image>
+                <el-image class="topic-image" v-for="img in item.image" :src="`${img}`" ></el-image>
               </div>
             </light-card>
           </div>
@@ -207,7 +192,7 @@ navigator.geolocation.getCurrentPosition((position) => {
             天气信息
           </div>
           <el-divider style="margin: 10px 0"/>
-          <weather :data="weather"/>
+          <weather :data="weatherInfo"/>
         </light-card>
         <light-card>
           <div class="info-text">
@@ -248,17 +233,13 @@ navigator.geolocation.getCurrentPosition((position) => {
 <style lang="less" scoped>
 .top-topic{
   display: flex;
+  transition: scale .3s;
 
   div:first-of-type{
     font-size: 14px;
     margin-left: 10px;
     font-weight: bold;
     opacity: 0.8;
-    transition: color .3s, scale .3s;
-
-    &:hover{
-      scale: 1.1;
-    }
   }
 
   div:nth-of-type(2){
@@ -269,6 +250,7 @@ navigator.geolocation.getCurrentPosition((position) => {
   }
   &:hover{
     cursor: pointer;
+    scale: 1.02;
   }
 }
 
@@ -323,14 +305,7 @@ navigator.geolocation.getCurrentPosition((position) => {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .topic-type{
-    display: inline-block;
-    border: solid 0.5px grey;
-    border-radius: 3px;
-    font-size: 12px;
-    padding: 0 5px;
-    height: 18px;
-  }
+
   .topic-image{
     width: 100%;
     height: 100%;

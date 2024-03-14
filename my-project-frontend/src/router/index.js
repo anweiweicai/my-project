@@ -29,13 +29,20 @@ const router = createRouter({
             component: () => import('@/views/IndexView.vue'),
             children:[
                 {
-                    path: '',
-                    name: 'topic-list',
-                    component: ()=> import('@/views/forum/TopicList.vue')
-                },{
-                    path: 'topic-detail/:tid',
-                    name: 'topic-detail',
-                    component: ()=> import('@/views/forum/TopicDetail.vue')
+                  path: '',
+                  name: 'topics',
+                  component: ()=> import('@/views/forum/forum.vue'),
+                  children:[
+                      {
+                          path: '',
+                          name: 'topic-list',
+                          component: ()=> import('@/views/forum/TopicList.vue')
+                      },{
+                          path: 'topic-detail/:tid',
+                          name: 'topic-detail',
+                          component: ()=> import('@/views/forum/TopicDetail.vue')
+                      }
+                  ]
                 }, {
                     path: 'user-setting',
                     name: 'user-setting',
