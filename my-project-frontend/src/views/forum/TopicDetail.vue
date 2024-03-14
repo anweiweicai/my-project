@@ -3,11 +3,13 @@ import {useRoute} from "vue-router";
 import {get} from "@/net/index.js";
 import {computed, reactive} from "vue";
 import axios from "axios";
-import {ArrowLeft, Female, Male} from "@element-plus/icons-vue";
+import {ArrowLeft, CircleCheck, Female, Male, Star} from "@element-plus/icons-vue";
 import {QuillDeltaToHtmlConverter} from "quill-delta-to-html";
 import Card from "@/components/Card.vue";
 import router from "@/router/index.js";
 import TopicTag from "@/components/TopicTag.vue";
+import InteractButton from "@/components/InteractButton.vue";
+import {ElMessage} from "element-plus";
 
 const route = useRoute()
 
@@ -15,7 +17,9 @@ const tid = route.params.tid
 
 const topic = reactive({
   data: null,
-  comments: []
+  comments: [],
+  like: false,
+  collect: false
 })
 
 get(`/api/forum/topic?tid=${tid}`, data => {
@@ -30,6 +34,16 @@ const content = computed(() => {
   console.log(topic.data.content)
   return converter.convert()
 })
+function interact(type, message) {
+  get(`/api/forum/interact?tid=${tid}&type=${type}&state=${!topic[type]}`, () => {
+    topic[type] = !topic[type]
+    if (topic[type]) {
+      ElMessage.success(`${message}成功!`)
+    }else{
+      ElMessage.success(`已取消${message}!`)
+    }
+  })
+}
 
 </script>
 
@@ -70,7 +84,16 @@ const content = computed(() => {
         <div class="desc" style="margin: 0 5px">{{ topic.data.user.desc }}</div>
       </div>
       <div class="topic-main-right">
-        <div class="topic-content" v-html="content" style="">
+        <div class="topic-content" v-html="content"/>
+        <div style="text-align: right; margin-top: 30px" >
+          <interact-button name="点个赞吧" color="pink" check-name="已点赞" :check="topic.like"
+                           @check="interact('like', '点赞')">
+            <el-icon><CircleCheck/></el-icon>
+          </interact-button>
+          <interact-button name="收藏本贴" style="margin-left: 20px" color="orange" check-name="已收藏" :check="topic.collect"
+                           @check="interact('collect', '收藏')">
+            <el-icon><Star/></el-icon>
+          </interact-button>
         </div>
       </div>
     </div>

@@ -18,9 +18,13 @@ import com.example.utils.FlowUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +46,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     CacheUtils cacheUtils;
+
+    @Resource
+    StringRedisTemplate template;
 
     private Set<Integer> types;
     @PostConstruct
@@ -137,6 +144,68 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return vo;
     }
 
+    @Override
+    public void interact(Interact interact, boolean state) {
+        String type = interact.getType();
+        synchronized (type.intern()){
+            template.opsForHash().put(type, interact.toKey(), Boolean.toString(state));
+            this.saveInteractSchedule(type);
+        }
+    }
+
+    /**
+     * 用于定时同步缓存中的记录
+     */
+    private final Map<String, Boolean> state = new HashMap<>();
+    /**
+     * 创建定时任务功能实例
+     */
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
+
+    /**
+     * 创建定时任务
+     * @param type
+     */
+    private void saveInteractSchedule(String type){
+        if (!state.getOrDefault(type, false)) {
+            state.put(type, true);
+            service.schedule(() -> {
+                this.saveInteract(type);
+                state.put(type, false);
+            }, 3, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * 将缓存中的记录分类并同步到数据库中
+     * @param type
+     */
+    private void saveInteract(String type){
+        synchronized (type.intern()){
+            List<Interact> check = new LinkedList<>();
+            List<Interact> uncheck = new LinkedList<>();
+            template.opsForHash().entries(type).forEach((k, v) -> {
+                if (Boolean.parseBoolean(v.toString())){
+                    check.add(Interact.parseInteract(k.toString(), type));
+                }else {
+                    uncheck.add(Interact.parseInteract(k.toString(), type));
+                }
+            });
+            if (!check.isEmpty()){
+                baseMapper.addInteract(check, type);
+            }
+            if (!uncheck.isEmpty()){
+                baseMapper.deleteInteract(uncheck, type);
+            }
+            template.delete(type);
+        }
+    }
+    /**
+     * 将用户详情拷贝到目标对象中
+     * @param target 目标对象
+     * @param uid 用户ID
+     * @return
+     */
     private <T> T fillUserDetailsByPrivacy(T target, int uid){
         AccountDetails details = accountDetailsMapper.selectById(uid);
         Account account = accountMapper.selectById(uid);
