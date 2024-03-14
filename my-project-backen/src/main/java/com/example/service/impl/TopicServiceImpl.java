@@ -158,6 +158,25 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }
     }
 
+    @Override
+    public List<TopicPreviewVO> listTopicCollects(int uid) {
+        return baseMapper.collectTopics(uid)
+                .stream()
+                .map(topic -> {
+                    TopicPreviewVO vo = new TopicPreviewVO();
+                    BeanUtils.copyProperties(topic, vo);
+                    return vo;
+                })
+                .toList();
+    }
+
+    /**
+     * 判断是否有点赞和收藏
+     * @param tid
+     * @param uid
+     * @param type
+     * @return
+     */
     private boolean hasInteract(int tid, int uid, String type){
         String key = tid + ":" + uid;
         if (template.opsForHash().hasKey(type, key)){
