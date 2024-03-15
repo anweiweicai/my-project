@@ -3,7 +3,7 @@ import {useRoute} from "vue-router";
 import {get, post} from "@/net/index.js";
 import {computed, reactive, ref} from "vue";
 import axios from "axios";
-import {ArrowLeft, CircleCheck, EditPen, Female, Male, Plus, Star} from "@element-plus/icons-vue";
+import {ArrowLeft, ChatSquare, CircleCheck, Delete, EditPen, Female, Male, Plus, Star} from "@element-plus/icons-vue";
 import {QuillDeltaToHtmlConverter} from "quill-delta-to-html";
 import Card from "@/components/Card.vue";
 import router from "@/router/index.js";
@@ -30,7 +30,7 @@ const edit = ref(false)
 const comment = reactive({
   show: false,
   text: '',
-  quote: -1
+  quote: null
 })
 const init = () => get(`/api/forum/topic?tid=${tid}`, data => {
   topic.data = data
@@ -86,6 +86,13 @@ function loadComments(page) {
 function onCommentAdd(){
   comment.show = false
   loadComments(Math.floor((topic.data.comments + 1) / 10) + 1)
+}
+
+function deleteComment(id){
+  get(`/api/forum/delete-comment?id=${id}`, () => {
+    ElMessage.success('评论删除成功!')
+    loadComments(topic.page)
+  })
 }
 </script>
 
@@ -175,7 +182,16 @@ function onCommentAdd(){
             <div style="color: grey; font-size: 13px">
               <div>评论时间: {{new Date(item.time).toLocaleString()}}</div>
             </div>
+            <div v-if="item.quote" class="comment-quote">
+              回复: {{item.quote}}
+            </div>
             <div class="topic-content" v-html="convertToHtml(item.content)"/>
+            <div style="text-align: right">
+              <el-link :icon="ChatSquare" @click="comment.show = true; comment.quote = item"
+                       type="info">回复评论</el-link>
+              <el-link :icon="Delete" type="danger" v-if="item.user.id === store.user.id"
+                       style="margin-left: 20px" @click="deleteComment(item.id)">删除评论</el-link>
+            </div>
           </div>
         </div>
         <div style="width: fit-content; margin: 20px auto">
@@ -191,7 +207,7 @@ function onCommentAdd(){
     <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
                           :quote="comment.quote" @comment="onCommentAdd"/>
     <el-tooltip content="点击评论" effect="light" placement="left">
-      <div class="add-comment" @click="comment.show = true" >
+      <div class="add-comment" @click="comment.show = true; comment.quote = null" >
         <el-icon><Plus/></el-icon>
       </div>
     </el-tooltip>
@@ -265,8 +281,14 @@ function onCommentAdd(){
   }
 
 }
-.el-popper.is-customized .el-popper__arrow::before {
-  background: linear-gradient(45deg, #b2e68d, #bce689);
-  right: 0;
+
+.comment-quote{
+  font-size: 13px;
+  color: grey;
+  background-color: rgba(94, 94, 94, 0.2);
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
 }
+
 </style>
