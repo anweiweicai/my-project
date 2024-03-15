@@ -1,18 +1,20 @@
 <script setup>
 import {useRoute} from "vue-router";
-import {get} from "@/net/index.js";
-import {computed, reactive} from "vue";
+import {get, post} from "@/net/index.js";
+import {computed, reactive, ref} from "vue";
 import axios from "axios";
-import {ArrowLeft, CircleCheck, Female, Male, Star} from "@element-plus/icons-vue";
+import {ArrowLeft, CircleCheck, EditPen, Female, Male, Star} from "@element-plus/icons-vue";
 import {QuillDeltaToHtmlConverter} from "quill-delta-to-html";
 import Card from "@/components/Card.vue";
 import router from "@/router/index.js";
 import TopicTag from "@/components/TopicTag.vue";
 import InteractButton from "@/components/InteractButton.vue";
 import {ElMessage} from "element-plus";
+import {useStore} from "@/store/index.js";
+import TopicEditor from "@/components/TopicEditor.vue";
 
 const route = useRoute()
-
+const store = useStore()
 const tid = route.params.tid
 
 const topic = reactive({
@@ -22,6 +24,15 @@ const topic = reactive({
   collect: false
 })
 
+const edit = ref(false)
+
+const init = () => get(`/api/forum/topic?tid=${tid}`, data => {
+  topic.data = data
+  topic.like = data.interact.like
+  topic.collect = data.interact.collect
+})
+init()
+
 get(`/api/forum/topic?tid=${tid}`, data => {
   topic.data = data
   topic.like = data.interact.like
@@ -30,9 +41,7 @@ get(`/api/forum/topic?tid=${tid}`, data => {
 
 const content = computed(() => {
   const ops = JSON.parse(topic.data.content).ops
-  const converter = new QuillDeltaToHtmlConverter(ops, {
-    inlineStyles: true
-  })
+  const converter = new QuillDeltaToHtmlConverter(ops, {inlineStyles: true})
   return converter.convert()
 })
 function interact(type, message) {
@@ -46,6 +55,18 @@ function interact(type, message) {
   })
 }
 
+function updateTopic(editor) {
+  post('/api/forum/update-topic', {
+    id: tid,
+    type: editor.type,
+    title: editor.title,
+    content: editor.content
+  }, () => {
+    ElMessage.success('帖子更新成功!')
+    edit.value = false
+    init()
+  })
+}
 </script>
 
 <template>
@@ -91,7 +112,11 @@ function interact(type, message) {
           <div>发帖时间: {{new Date(topic.data.time).toLocaleString()}}</div>
         </div>
         <div style="text-align: right; margin-top: 30px" >
-          <interact-button name="点个赞吧" color="pink" check-name="已点赞" :check="topic.like"
+          <interact-button name="编辑帖子" color="dodgerblue" check-name="已点赞" :check="false"
+                           @check="edit = true" v-if="store.user.id === topic.data.user.id">
+            <el-icon><EditPen/></el-icon>
+          </interact-button>
+          <interact-button name="点个赞吧" style="margin-left: 20px" color="pink" check-name="已点赞" :check="topic.like"
                            @check="interact('like', '点赞')">
             <el-icon><CircleCheck/></el-icon>
           </interact-button>
@@ -102,6 +127,9 @@ function interact(type, message) {
         </div>
       </div>
     </div>
+    <topic-editor :show="edit" @close="edit = false" v-if="topic.data"
+                  :default-title="topic.data.title" :default-type="topic.data.type"
+                  :default-content="topic.data.content" submit-button="更新帖子内容" :submit="updateTopic"/>
   </div>
 </template>
 
@@ -138,7 +166,6 @@ function interact(type, message) {
     padding: 10px 20px;
     display: flex;
     flex-direction: column;
-    flex-wrap: wrap;
     :deep(img){
       max-width: 100% !important;
     }
@@ -146,7 +173,7 @@ function interact(type, message) {
       font-size: 14px;
       line-height: 22px;
       opacity: 0.8;
-
+      flex: 1;
     }
   }
 }

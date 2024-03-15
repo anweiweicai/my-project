@@ -1,7 +1,7 @@
 <script setup>
 import {Check, Document} from "@element-plus/icons-vue"
 import {computed, reactive, ref} from "vue";
-import {Quill, QuillEditor} from "@vueup/vue-quill";
+import {Delta, Quill, QuillEditor} from "@vueup/vue-quill";
 import ImageResize from "quill-image-resize-vue"; // 调整图片大小
 import {ImageExtend, QuillWatch} from "quill-image-super-solution-module"; // 上传图片
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
@@ -11,8 +11,37 @@ import {ElMessage} from "element-plus";
 import ColorDot from "@/components/ColorDot.vue";
 import {useStore} from "@/store/index.js";
 
-defineProps({
-  show: Boolean
+const props = defineProps({
+  show: Boolean,
+  defaultTitle: {
+    default: '',
+    type: String
+  },
+  defaultContent: {
+    default: '',
+    type: String
+  },
+  defaultType: {
+    default: 1,
+    type: Number
+  },
+  submitButton: {
+    default: '立即发布',
+    type: String
+  },
+  submit: {
+    default: (editor, success) => {
+      post('/api/forum/create-topic', {
+        type: editor.type,
+        title: editor.title,
+        content: editor.content
+      }, () => {
+        ElMessage.success('帖子发布成功!')
+        success()
+      })
+    },
+    type: Function
+  }
 })
 // emit是用来向父组件传递事件的函数
 const emit = defineEmits(['close', 'success'])
@@ -29,9 +58,13 @@ const editor = reactive({
  *  初始化富文本
  */
 function initEditor() {
-  refEditor.value.setContents('', 'user')
-  editor.title = ''
-  editor.type = 1
+  if (props.defaultContent) {
+    editor.content = new Delta(JSON.parse(props.defaultContent))
+  }else {
+    refEditor.value.setContents('', 'user')
+  }
+  editor.title = props.defaultTitle
+  editor.type = props.defaultType
 }
 
 /**
@@ -73,14 +106,7 @@ function submitTopic() {
     ElMessage.warning('帖子内容不能为空!')
     return
   }
-  post('/api/forum/create-topic', {
-    type: editor.type,
-    title: editor.title,
-    content: editor.content
-  }, () => {
-    ElMessage.success('帖子发布成功!')
-    emit('success')
-  })
+  props.submit(editor,() => emit('success'))
 }
 
 
@@ -177,7 +203,7 @@ const editorOption = {
           当前字数:{{ contentLength }}(最大支持字数:20000)
         </div>
         <div>
-          <el-button type="success" :icon="Check" plain @click="submitTopic" >立即发布</el-button>
+          <el-button type="success" :icon="Check" plain @click="submitTopic" >{{ submitButton }}</el-button>
         </div>
       </div>
     </el-drawer>
