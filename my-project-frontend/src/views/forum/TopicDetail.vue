@@ -3,7 +3,7 @@ import {useRoute} from "vue-router";
 import {get, post} from "@/net/index.js";
 import {computed, reactive, ref} from "vue";
 import axios from "axios";
-import {ArrowLeft, CircleCheck, EditPen, Female, Male, Star} from "@element-plus/icons-vue";
+import {ArrowLeft, CircleCheck, EditPen, Female, Male, Plus, Star} from "@element-plus/icons-vue";
 import {QuillDeltaToHtmlConverter} from "quill-delta-to-html";
 import Card from "@/components/Card.vue";
 import router from "@/router/index.js";
@@ -12,6 +12,7 @@ import InteractButton from "@/components/InteractButton.vue";
 import {ElMessage} from "element-plus";
 import {useStore} from "@/store/index.js";
 import TopicEditor from "@/components/TopicEditor.vue";
+import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
 
 const route = useRoute()
 const store = useStore()
@@ -25,7 +26,11 @@ const topic = reactive({
 })
 
 const edit = ref(false)
-
+const comment = reactive({
+  show: false,
+  text: '',
+  quote: -1
+})
 const init = () => get(`/api/forum/topic?tid=${tid}`, data => {
   topic.data = data
   topic.like = data.interact.like
@@ -130,6 +135,14 @@ function updateTopic(editor) {
     <topic-editor :show="edit" @close="edit = false" v-if="topic.data"
                   :default-title="topic.data.title" :default-type="topic.data.type"
                   :default-content="topic.data.content" submit-button="更新帖子内容" :submit="updateTopic"/>
+    <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid" :quote="comment.quote">
+
+    </topic-comment-editor>
+    <el-tooltip content="点击评论" effect="light" placement="left">
+      <div class="add-comment" @click="comment.show = true" >
+        <el-icon><Plus/></el-icon>
+      </div>
+    </el-tooltip>
   </div>
 </template>
 
@@ -178,4 +191,30 @@ function updateTopic(editor) {
   }
 }
 
+.add-comment{
+  position: fixed;
+  bottom: 30px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: var(--el-color-primary);
+  text-align: center;
+  line-height: 45px;
+  background: var(--el-bg-color-overlay);
+  box-shadow: var(--el-box-shadow-lighter);
+  transition: .3s;
+
+  &:hover{
+    background: var(--el-border-color-extra-light);
+    cursor: pointer;
+    scale: 1.1;
+  }
+
+}
+.el-popper.is-customized .el-popper__arrow::before {
+  background: linear-gradient(45deg, #b2e68d, #bce689);
+  right: 0;
+}
 </style>

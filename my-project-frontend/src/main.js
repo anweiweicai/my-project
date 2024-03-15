@@ -3,6 +3,7 @@ import App from './App.vue'
 import router from "@/router/index.js";
 import axios from "axios";
 import {createPinia} from "pinia";
+import '@/assets/quill.css'
 
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';//ElMessage组件

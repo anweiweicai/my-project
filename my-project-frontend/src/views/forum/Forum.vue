@@ -17,14 +17,19 @@ get('/api/forum/types', data => {
 </script>
 
 <template>
-  <router-view v-slot="{Component}">
-    <transition name="el-fade-in-linear" mode="out-in">
-<!--     keep-alive 保存组件, 避免重复加载 -->
-      <keep-alive include="TopicList">
-        <component :is="Component"/>
-      </keep-alive>
-    </transition>
-  </router-view>
+  <div>
+    <router-view v-slot="{Component}">
+      <transition name="el-fade-in-linear" mode="out-in">
+        <!--     keep-alive 保存组件, 避免重复加载 -->
+        <keep-alive include="TopicList">
+          <component :is="Component"/>
+        </keep-alive>
+      </transition>
+    </router-view>
+    <el-tooltip content="回到顶部" effect="light" placement="left">
+      <el-backtop target=".main-content-page .el-scrollbar__wrap" :right="20" :bottom="80"></el-backtop>
+    </el-tooltip>
+  </div>
 </template>
 
 <style scoped>
