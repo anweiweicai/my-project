@@ -9,6 +9,7 @@ import com.example.entity.dto.*;
 import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
 import com.example.entity.vo.request.TopicUpdateVO;
+import com.example.entity.vo.response.CommentVO;
 import com.example.entity.vo.response.TopicDetailVO;
 import com.example.entity.vo.response.TopicPreviewVO;
 import com.example.entity.vo.response.TopicTopVO;
@@ -27,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -119,6 +121,12 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return null;
     }
 
+    /**
+     * 发表评论
+     * @param uid
+     * @param vo
+     * @return
+     */
     @Override
     public String createComment(int uid, AddCommentVO vo) {
         String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
@@ -130,6 +138,37 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         comment.setTime(new Date());
         commentMapper.insert(comment);
         return null;
+    }
+
+    /**
+     * 获取帖子评论
+     * @param tid
+     * @param pageNumber
+     * @return
+     */
+    @Override
+    public List<CommentVO> comments(int tid, int pageNumber) {
+        Page<TopicComment> page = Page.of(pageNumber, 10);
+        commentMapper.selectPage(page, Wrappers.<TopicComment>query().eq("tid", tid));
+
+        return page.getRecords().stream().map(dto -> {
+            CommentVO vo = new CommentVO();
+            BeanUtils.copyProperties(dto, vo);
+            if (dto.getQuote() > 0){
+                // 获取引用的评论
+                JSONObject object = JSONObject.parseObject(commentMapper.selectOne(Wrappers.<TopicComment>query()
+                        .eq("id", dto.getQuote()).orderByAsc("time"))
+                        .getContent()
+                );
+                StringBuilder builder = new StringBuilder();
+                this.shortContent(object.getJSONArray("ops"), builder, ignore -> {});
+                vo.setQuote(builder.toString());
+            }
+            CommentVO.User user = new CommentVO.User();
+            this.fillUserDetailsByPrivacy(user, dto.getUid());
+            vo.setUser(user);
+            return vo;
+        }).toList();
     }
 
     /**
@@ -184,6 +223,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         vo.setInteract(interact);
         TopicDetailVO.User user = new TopicDetailVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user, topic.getUid()));
+        vo.setComments(commentMapper.selectCount(Wrappers.<TopicComment>query().eq("tid", tid)));
         return vo;
     }
 
@@ -308,6 +348,19 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+        this.shortContent(ops, previewText, obj -> images.add(obj.toString()));
+        vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) + "..." : previewText.toString());
+        vo.setImage(images);
+        return vo;
+    }
+
+    /**
+     * 截取文本
+     * @param ops
+     * @param previewText
+     * @param imageHandler
+     */
+    private void shortContent(JSONArray ops, StringBuilder previewText, Consumer<Object> imageHandler){
         for (Object op : ops){
             Object insert = JSONObject.from(op).get("insert");
             if (insert instanceof String text){
@@ -315,12 +368,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 previewText.append(text);
             } else if (insert instanceof Map<?,?> map) {
                 Optional.ofNullable(map.get("image"))
-                        .ifPresent(obj -> images.add(obj.toString()));
+                        .ifPresent(imageHandler);
             }
         }
-        vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) + "..." : previewText.toString());
-        vo.setImage(images);
-        return vo;
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.example.config;
 
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,13 +28,19 @@ public class WebConfiguration {
      * 分页插件
      * @return
      */
+//    @Bean
+//    public PaginationInnerInterceptor paginationInnerInterceptor(){
+//        // 创建一个新的 PaginationInnerInterceptor 实例
+//        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor();
+//        // 将每次分页查询的最大限制设置为100行
+//        paginationInnerInterceptor.setMaxLimit(100L); // 每次分页查询最大100行
+//        // 返回配置好的 PaginationInnerInterceptor 实例
+//        return paginationInnerInterceptor;
+//    }
     @Bean
-    public PaginationInnerInterceptor paginationInnerInterceptor(){
-        // 创建一个新的 PaginationInnerInterceptor 实例
-        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor();
-        // 将每次分页查询的最大限制设置为100行
-        paginationInnerInterceptor.setMaxLimit(100L); // 每次分页查询最大100行
-        // 返回配置好的 PaginationInnerInterceptor 实例
-        return paginationInnerInterceptor;
+    MybatisPlusInterceptor mybatisPlusInterceptor(){
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor();
+        mybatisPlusInterceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+        return mybatisPlusInterceptor;
     }
 }
