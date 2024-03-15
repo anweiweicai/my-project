@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.*;
+import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
 import com.example.entity.vo.request.TopicUpdateVO;
 import com.example.entity.vo.response.TopicDetailVO;
@@ -43,6 +44,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     AccountPrivacyMapper accountPrivacyMapper;
 
     @Resource
+    TopicCommentMapper commentMapper;
+
+    @Resource
     FlowUtils flowUtils;
 
     @Resource
@@ -78,7 +82,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     @Override
     public String createTopic(int uid, TopicCreateVO vo) {
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
-        if (!textLimitCheck(vo.getContent())) return "文章内容超过限定字数, 请重新编写!";
+        if (!textLimitCheck(vo.getContent(), 20000)) return "文章内容超过限定字数, 请重新编写!";
         if (!types.contains(vo.getType())) return "文章类型非法!";
         if (!flowUtils.limitPeriodCounterCheck(key, 5, 3600)) return "您在一小时内发文超过5篇, 过于频繁, 请稍后再试!";
         Topic topic = new Topic();
@@ -95,9 +99,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }
     }
 
+    /**
+     * 更新帖子
+     * @param uid
+     * @param vo
+     * @return
+     */
     @Override
     public String updateTopic(int uid, TopicUpdateVO vo) {
-        if (!textLimitCheck(vo.getContent())) return "文章内容超过限定字数, 请重新编写!";
+        if (!textLimitCheck(vo.getContent(), 20000)) return "文章内容超过限定字数, 请重新编写!";
         if (!types.contains(vo.getType())) return "文章类型非法!";
         baseMapper.update(null, Wrappers.<Topic>update()
                 .eq("uid", uid)
@@ -106,6 +116,19 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 .set("content", vo.getContent().toString())
                 .set("type", vo.getType())
         );
+        return null;
+    }
+
+    @Override
+    public String createComment(int uid, AddCommentVO vo) {
+        String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
+        if (!flowUtils.limitPeriodCounterCheck(key, 5, 60)) return "您在1分钟内发表评论过于频繁, 请稍后再试!";
+        if (!textLimitCheck(JSONObject.parseObject(vo.getContent()),2000)) return "评论内容超过限定字数, 请重新编写!";
+        TopicComment comment = new TopicComment();
+        comment.setUid(uid);
+        BeanUtils.copyProperties(vo, comment);
+        comment.setTime(new Date());
+        commentMapper.insert(comment);
         return null;
     }
 
@@ -305,12 +328,12 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
      * @param object
      * @return 超过返回false, 未超过返回true
      */
-    private boolean textLimitCheck(JSONObject object) {
+    private boolean textLimitCheck(JSONObject object, int max) {
         if (object == null) return false;
         long length = 0;
         for (Object op : object.getJSONArray("ops")){
             length += JSONObject.from(op).getString("insert").length();
-            if (length > 20000) return false;
+            if (length > max) return false;
         }
         return true;
     }
