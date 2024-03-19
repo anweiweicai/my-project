@@ -1,39 +1,44 @@
-# my-project 
+# my-project
 
-#### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+### 主要实现功能
+- 用户个人信息管理，用户隐私设置，密码设置
 
-#### 软件架构
-软件架构说明
+- 用户头像设置
 
+- 论坛贴列表展示，支持分类展示
 
-#### 安装教程
+- 论坛发帖功能，支持富文本编辑器含图片插入等功能
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+- 论坛评论功能，支持用户对帖子进行评论或是对评论进行嵌套评论
 
-#### 使用说明
+- 帖子点赞和收藏功能
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+- 当地实时天气展示
 
 
-#### 特技
+### 项目技术
+- 采用Vue3 + SpringBoot3构建，使用最新技术，走在时代前沿
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+- 天气模块实时对接第三方和风天气API接口，并使用Redis进行天气信息缓存，优化调用次数
+
+- 用户头像基于Minio对象存储实现，更加简单轻松地存储和管理用户头像
+
+- 帖子支持使用富文本编辑器编写，采用Delta数据格式，防止XSS攻击，优化数据传输
+
+- 帖子编辑器支持一键图片粘贴上传，实时同步到Minio对象存储服务，使用更加简单方便
+
+- 论坛帖子列表数据使用Redis进行短时间缓存，防止大量请求对数据库造成压力
+
+- 点赞和收藏数据采用Redis进行存储并定时同步到MySQL数据库，防止高频操作对数据库造成压力
+- 采用Mybatis-Plus作为持久层框架，使用更便捷
+
+- 采用Redis存储注册/重置操作验证码，带过期时间控制
+
+- 采用RabbitMQ积压短信发送任务，再由监听器统一处理
+
+- 采用SpringSecurity作为权限校验框架，手动整合Jwt校验方案
+
+- 采用Redis进行IP地址限流处理，防刷接口
+
+- 视图层对象和数据层对象分离
+- 错误和异常页面统一采用JSON格式返回，前端处理响应更统一
