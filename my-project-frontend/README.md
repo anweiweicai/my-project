@@ -1,29 +1,44 @@
-# my-project-frontend
+# my-project
 
-This template should help get you started developing with Vue 3 in Vite.
+### 主要实现功能
+- 用户个人信息管理，用户隐私设置，密码设置
 
-## Recommended IDE Setup
+- 用户头像设置
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+- 论坛贴列表展示，支持分类展示
 
-## Customize configuration
+- 论坛发帖功能，支持富文本编辑器含图片插入等功能
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+- 论坛评论功能，支持用户对帖子进行评论或是对评论进行嵌套评论
 
-## Project Setup
+- 帖子点赞和收藏功能
 
-```sh
-npm install
-```
+- 当地实时天气展示
 
-### Compile and Hot-Reload for Development
 
-```sh
-npm run dev
-```
+### 项目技术
+- 采用Vue3 + SpringBoot3构建，使用最新技术，走在时代前沿
 
-### Compile and Minify for Production
+- 天气模块实时对接第三方和风天气API接口，并使用Redis进行天气信息缓存，优化调用次数
 
-```sh
-npm run build
-```
+- 用户头像基于Minio对象存储实现，更加简单轻松地存储和管理用户头像
+
+- 帖子支持使用富文本编辑器编写，采用Delta数据格式，防止XSS攻击，优化数据传输
+
+- 帖子编辑器支持一键图片粘贴上传，实时同步到Minio对象存储服务，使用更加简单方便
+
+- 论坛帖子列表数据使用Redis进行短时间缓存，防止大量请求对数据库造成压力
+
+- 点赞和收藏数据采用Redis进行存储并定时同步到MySQL数据库，防止高频操作对数据库造成压力
+- 采用Mybatis-Plus作为持久层框架，使用更便捷
+
+- 采用Redis存储注册/重置操作验证码，带过期时间控制
+
+- 采用RabbitMQ积压短信发送任务，再由监听器统一处理
+
+- 采用SpringSecurity作为权限校验框架，手动整合Jwt校验方案
+
+- 采用Redis进行IP地址限流处理，防刷接口
+
+- 视图层对象和数据层对象分离
+- 错误和异常页面统一采用JSON格式返回，前端处理响应更统一
